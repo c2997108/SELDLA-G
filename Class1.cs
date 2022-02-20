@@ -11,7 +11,7 @@ namespace SELDLA_G
 {
     internal class Class1
     {
-        public static void Main()
+        public static void Main2()
         {
             using Context context = Context.Create(builder => builder.AllAccelerators());
             Debug.WriteLine("Context: " + context.ToString());
