@@ -39,7 +39,7 @@ namespace SELDLA_G
             Regex reg = new Regex("^[^#]");
             List<PhaseData> cleaned  = File.ReadLines("seldla2nd_chain.ld2imp.all.txt")
             //List<PhaseData> cleaned = File.ReadLines("savedate.txt")
-                                        .Where(c => reg.IsMatch(c)).Take(10000).AsParallel().AsOrdered()
+                                        .Where(c => reg.IsMatch(c)).Take(30000).AsParallel().AsOrdered()
                                         .Select(line => {
                                             var items = line.Split("\t");
                                             PhaseData phase = new PhaseData();
@@ -129,11 +129,17 @@ namespace SELDLA_G
             }
 
 
-            MemoryBuffer1D<int, Stride1D.Dense> deviceOutput2 = accelerator.Allocate1D<int>(cleaned.Count * cleaned.Count);
+            accelerator.Dispose();
+            context.Dispose();
+            using Context context2 = Context.Create(builder => builder.AllAccelerators());
+            Accelerator accelerator2 = context2.GetPreferredDevice(preferCPU: false)
+                                       .CreateAccelerator(context2);
+            MemoryBuffer1D<int, Stride1D.Dense> deviceData2 = accelerator2.Allocate1D(phaseForGPU);
+            MemoryBuffer1D<int, Stride1D.Dense> deviceOutput2 = accelerator2.Allocate1D<int>(cleaned.Count * cleaned.Count);
             Action<Index2D, int, int, ArrayView<int>, ArrayView<int>> loadedKernel2 =
-                accelerator.LoadAutoGroupedStreamKernel<Index2D, int, int, ArrayView<int>, ArrayView<int>>(CalcNotNANumKernel);
-            loadedKernel2(new Index2D(cleaned.Count, cleaned.Count), cleaned.Count, cleaned[0].dataphase.Count, deviceData.View, deviceOutput2.View);
-            accelerator.Synchronize();
+                accelerator2.LoadAutoGroupedStreamKernel<Index2D, int, int, ArrayView<int>, ArrayView<int>>(CalcNotNANumKernel);
+            loadedKernel2(new Index2D(cleaned.Count, cleaned.Count), cleaned.Count, cleaned[0].dataphase.Count, deviceData2.View, deviceOutput2.View);
+            accelerator2.Synchronize();
             int[] hostOutput2 = deviceOutput2.GetAsArray1D();
             Console.WriteLine(hostOutput2.Length);
             float[,] distphase2 = new float[cleaned.Count, cleaned.Count];
@@ -159,8 +165,8 @@ namespace SELDLA_G
             }
 
 
-            accelerator.Dispose();
-            context.Dispose();
+            accelerator2.Dispose();
+            context2.Dispose();
             //Console.WriteLine(distphase[0,0]);
 
             num_markers = cleaned.Count;
@@ -334,7 +340,7 @@ namespace SELDLA_G
             _spriteBatch.Draw(whiteRectangle, new Rectangle(worldX, worldY, 80, 30), Color.Chocolate);
             Color color = new Color(128, 128, 128, 128);
             float mywheel = (float)Math.Pow(1.01, worldW);
-            _spriteBatch.Draw(texture, Vector2.Zero, null, Color.White, 0.0f, Vector2.Zero, new Vector2(mywheel, mywheel), SpriteEffects.None, 0.0f);
+            _spriteBatch.Draw(texture, new Vector2((float)worldX, (float)worldY), null, Color.White, 0.0f, Vector2.Zero, new Vector2(mywheel, mywheel), SpriteEffects.None, 0.0f);
             //_spriteBatch.Draw(texture, Vector2.Zero, color);
             //_spriteBatch.Draw(texture, new Vector2((float)worldX, (float)worldY), null, Color.White, 0.0f, Vector2.Zero, new Vector2(2.0f, 0.5f), SpriteEffects.None, 0.0f);
             //_spriteBatch.Draw(texture2, Vector2.Zero, Color.White);
