@@ -52,9 +52,9 @@ namespace SELDLA_G
             IsMouseVisible = true;
 
             Regex reg = new Regex("^[^#]");
-            myphaseData  = File.ReadLines("seldla2nd_chain.ld2imp.all.txt")
-            //myphaseData = File.ReadLines("savedate.txt")
-                                        .Where(c => reg.IsMatch(c)).Take(30000).AsParallel().AsOrdered()
+            //myphaseData  = File.ReadLines("seldla2nd_chain.ld2imp.all.txt")
+            myphaseData = File.ReadLines("savedate.txt")
+                                        .Where(c => reg.IsMatch(c)).Take(3000).AsParallel().AsOrdered()
                                         .Select(line => {
                                             var items = line.Split("\t");
                                             PhaseData phase = new PhaseData();
@@ -515,8 +515,9 @@ namespace SELDLA_G
                 calcMatchRate();
                 setDistTexture();
             }
-            if (state.IsKeyDown(Keys.T))
+            if (state.IsKeyDown(Keys.T) && changing == false)
             {
+                changing = true;
                 System.Threading.Thread.Sleep(2000);
             }
             if (state.IsKeyDown(Keys.Y))
