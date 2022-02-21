@@ -518,7 +518,45 @@ namespace SELDLA_G
             if (state.IsKeyDown(Keys.T) && changing == false)
             {
                 changing = true;
-                System.Threading.Thread.Sleep(2000);
+                if(myphaseData[pos1.X].chr2nd != myphaseData[pos2.X].chr2nd)
+                {
+                    bool flag = true;
+                    bool flag2 = true;
+                    List<PhaseData> tempmyphaseData = new List<PhaseData>();
+                    for (int i = 0; i < myphaseData.Count; i++)
+                    {
+                        if (myphaseData[i].chr2nd != myphaseData[pos1.X].chr2nd && myphaseData[i].chr2nd != myphaseData[pos2.X].chr2nd)
+                        {
+                            tempmyphaseData.Add(myphaseData[i]);
+                        }
+                        else if (flag == true && myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd)
+                        {
+                            flag = false;
+                            for(int j = 0; j < myphaseData.Count; j++)
+                            {
+                                if (myphaseData[j].chr2nd == myphaseData[pos2.X].chr2nd)
+                                {
+                                    tempmyphaseData.Add(myphaseData[j]);
+                                }
+                            }
+                        }
+                        else if(flag2 == true && myphaseData[i].chr2nd == myphaseData[pos2.X].chr2nd)
+                        {
+                            flag2 = false;
+                            for( int j = 0; j < myphaseData.Count; j++)
+                            {
+                                if(myphaseData[j].chr2nd == myphaseData[pos1.X].chr2nd)
+                                {
+                                    tempmyphaseData.Add(myphaseData[j]);
+                                }
+                            }
+                        }
+                    }
+                    myphaseData = tempmyphaseData;
+                    calcMatchRate();
+                    setDistTexture();
+
+                }
             }
             if (state.IsKeyDown(Keys.Y))
             {
