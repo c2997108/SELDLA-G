@@ -3,6 +3,17 @@ using System.Collections.Generic;
 
 namespace SELDLA_G
 {
+    class MarkerPos
+    {
+        public int X;
+        public string chrname;
+        public string contigname;
+        public int chrStart = -1;
+        public int chrEnd = -1;
+        public int contigStart = -1;
+        public int contigEnd = -1;
+    }
+
     internal class PhaseData : System.IComparable
     {
         public string chr2nd;
