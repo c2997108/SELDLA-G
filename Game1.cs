@@ -52,8 +52,8 @@ namespace SELDLA_G
             IsMouseVisible = true;
 
             Regex reg = new Regex("^[^#]");
-            //myphaseData  = File.ReadLines("seldla2nd_chain.ld2imp.all.txt")
-            myphaseData = File.ReadLines("savedate.txt")
+            //myphaseData  = File.ReadLines("../../../seldla2nd_chain.ld2imp.all.txt")
+            myphaseData = File.ReadLines("../../../savedate.txt")
                                         .Where(c => reg.IsMatch(c)).Take(3000).AsParallel().AsOrdered()
                                         .Select(line => {
                                             var items = line.Split("\t");
@@ -333,7 +333,7 @@ namespace SELDLA_G
             }
             //texture.SetData(0, new Rectangle(0, 0, num_markers, num_markers), dataColors, 0, num_markers * num_markers);
             texture.SetData(dataColors);
-
+/*
             FileStream fileStream = new FileStream("seldla2nd_heatmap_phase_physical.png", FileMode.Open);
             texture2 = Texture2D.FromStream(GraphicsDevice, fileStream);
             fileStream.Dispose();
@@ -345,7 +345,7 @@ namespace SELDLA_G
                 byte gray = (byte)(0.29 * data[i].R + 0.58 * data[i].G + 0.11 * data[i].B);
                 data[i] = new Color(gray, gray, gray, data[i].A);
             }
-            texture2.SetData(data);
+            texture2.SetData(data);*/
 
             var w = GraphicsDevice.DisplayMode.Width; //500;
             var h = 80;
