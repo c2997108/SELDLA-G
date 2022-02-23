@@ -259,8 +259,8 @@ namespace SELDLA_G
             whiteRectangle = new Texture2D(GraphicsDevice, 1, 1);
             whiteRectangle.SetData(new[] { Color.White });
 
-
-            openFile("../../../savedate.txt");
+            openFile("savedate.txt");
+            //openFile("../../../savedate.txt");
             //openFile("../../../seldla2nd_chain.ld2imp.all.txt");
 
             texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
