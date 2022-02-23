@@ -10,7 +10,9 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using ILGPU;
 using ILGPU.Runtime;
+using ILGPU.Runtime.OpenCL;
 using SkiaSharp;
+using System.Text;
 
 namespace SELDLA_G
 {
@@ -43,6 +45,15 @@ namespace SELDLA_G
         MarkerPos pos1 = new MarkerPos();
         MarkerPos pos2 = new MarkerPos();
         bool changing = false;
+        int markN = 0;
+        int[] markNstart = new int[3];
+        int[] markNend = new int[3];
+        int markM = 0;
+        int[] markMstart1 = new int[3];
+        int[] markMend1 = new int[3];
+        int[] markMstart2 = new int[3];
+        int[] markMend2 = new int[3];
+        string savefilename = "savedata.txt";
 
 
         public Game1()
@@ -51,10 +62,21 @@ namespace SELDLA_G
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
 
+            using Context context = Context.Create(builder => builder.AllAccelerators());
+            Debug.WriteLine("Context: " + context.ToString());
+            Accelerator accelerator = context.GetPreferredDevice(preferCPU: false)
+                                      .CreateAccelerator(context);
+            accelerator.PrintInformation();
+        }
+
+        void openFile(string filename)
+        {
             Regex reg = new Regex("^[^#]");
             //myphaseData  = File.ReadLines("../../../seldla2nd_chain.ld2imp.all.txt")
-            myphaseData = File.ReadLines("../../../savedate.txt")
-                                        .Where(c => reg.IsMatch(c)).Take(3000).AsParallel().AsOrdered()
+            myphaseData = File.ReadLines(filename)
+                                        .Where(c => reg.IsMatch(c))
+                                        //.Take(30000)
+                                        .AsParallel().AsOrdered()
                                         .Select(line => {
                                             var items = line.Split("\t");
                                             PhaseData phase = new PhaseData();
@@ -65,20 +87,22 @@ namespace SELDLA_G
                                             if ((items[2] == "+" && items[3] == "+") || (items[2] == "-" && items[3] == "-"))
                                             {
                                                 phase.chrorient = "+";
-                                            }else if((items[2] == "+" && items[3] == "-") || (items[2] == "-" && items[3] == "+"))
+                                            }
+                                            else if ((items[2] == "+" && items[3] == "-") || (items[2] == "-" && items[3] == "+"))
                                             {
-                                                phase.chrorient="-";
+                                                phase.chrorient = "-";
                                             }
                                             else
                                             {
                                                 phase.chrorient = "na";
                                             }
-                                            for(int i = 6; i < items.Length; i++)
+                                            for (int i = 6; i < items.Length; i++)
                                             {
-                                                if(items[i] == "1")
+                                                if (items[i] == "1")
                                                 {
                                                     phasedata.Add(1);
-                                                }else if(items[i] == "0")
+                                                }
+                                                else if (items[i] == "0")
                                                 {
                                                     phasedata.Add(-1);
                                                 }
@@ -88,128 +112,12 @@ namespace SELDLA_G
                                                 }
                                             }
                                             phase.dataphase = phasedata;
-                                            return phase; 
+                                            return phase;
                                         }).ToList();
 
-            using Context context = Context.Create(builder => builder.AllAccelerators());
-            Debug.WriteLine("Context: " + context.ToString());
-            Accelerator accelerator = context.GetPreferredDevice(preferCPU: false)
-                                      .CreateAccelerator(context);
-
-            accelerator.PrintInformation();
-
-            int[] phaseForGPU = new int[myphaseData.Count*myphaseData[0].dataphase.Count];
-            for(int i = 0; i < myphaseData.Count; i++)
-            {
-                for(int j=0; j < myphaseData[0].dataphase.Count; j++)
-                {
-                    phaseForGPU[i * myphaseData[0].dataphase.Count + j] = myphaseData[i].dataphase[j];
-                }
-            }
-            //Console.WriteLine(phaseForGPU.Length + ", " + phaseForGPU[0]);
-            // Load the data.
-            MemoryBuffer1D<int, Stride1D.Dense> deviceData = accelerator.Allocate1D(phaseForGPU);
-            MemoryBuffer1D<int, Stride1D.Dense> deviceOutput = accelerator.Allocate1D<int>(myphaseData.Count*myphaseData.Count);            
-            
-            // load / precompile the kernel
-            Action<Index2D, int, int, ArrayView<int>, ArrayView<int>> loadedKernel =
-                accelerator.LoadAutoGroupedStreamKernel<Index2D, int, int, ArrayView<int>, ArrayView<int>>(CalcMatchNumKernel);
-
-            // finish compiling and tell the accelerator to start computing the kernel
-            loadedKernel(new Index2D(myphaseData.Count,myphaseData.Count), myphaseData.Count, myphaseData[0].dataphase.Count, deviceData.View, deviceOutput.View);
-
-            // wait for the accelerator to be finished with whatever it's doing
-            // in this case it just waits for the kernel to finish.
-            accelerator.Synchronize();
-
-            // moved output data from the GPU to the CPU for output to console
-            int[] hostOutput = deviceOutput.GetAsArray1D();
-            Console.WriteLine(hostOutput.Length);
-            int[,] distphase = new int[myphaseData.Count, myphaseData.Count];
-            for (int i = 0; i < myphaseData.Count; i++)
-            {
-                for (int j = 0; j < myphaseData.Count; j++)
-                {
-                    distphase[i,j]=hostOutput[i*myphaseData.Count+j];
-                }
-            }
-
-            for (int i = 0; i < 10; i++)
-            {
-                for(int j = 0; j < 10; j++)
-                {
-                    Console.Write("\t"+distphase[i, j]);
-                }
-                Console.WriteLine("");
-            }
-
-
-            accelerator.Dispose();
-            context.Dispose();
-            using Context context2 = Context.Create(builder => builder.AllAccelerators());
-            Accelerator accelerator2 = context2.GetPreferredDevice(preferCPU: false)
-                                       .CreateAccelerator(context2);
-            MemoryBuffer1D<int, Stride1D.Dense> deviceData2 = accelerator2.Allocate1D(phaseForGPU);
-            MemoryBuffer1D<int, Stride1D.Dense> deviceOutput2 = accelerator2.Allocate1D<int>(myphaseData.Count * myphaseData.Count);
-            Action<Index2D, int, int, ArrayView<int>, ArrayView<int>> loadedKernel2 =
-                accelerator2.LoadAutoGroupedStreamKernel<Index2D, int, int, ArrayView<int>, ArrayView<int>>(CalcNotNANumKernel);
-            loadedKernel2(new Index2D(myphaseData.Count, myphaseData.Count), myphaseData.Count, myphaseData[0].dataphase.Count, deviceData2.View, deviceOutput2.View);
-            accelerator2.Synchronize();
-            int[] hostOutput2 = deviceOutput2.GetAsArray1D();
-            Console.WriteLine(hostOutput2.Length);
-            float[,] distphase2 = new float[myphaseData.Count, myphaseData.Count];
-            for (int i = 0; i < myphaseData.Count; i++)
-            {
-                for (int j = 0; j < myphaseData.Count; j++)
-                {
-                    //if(hostOutput2[i * cleaned.Count + j] == 0)
-                    //{
-                    //    Console.WriteLine(i + ", " + j);
-                    //}
-                    distphase2[i, j] = hostOutput2[i * myphaseData.Count + j];
-                }
-            }
-            
-            for (int i = 0; i < 10; i++)
-            {
-                for (int j = 0; j < 10; j++)
-                {
-                    Console.Write("\t" + distphase2[i, j]);
-                }
-                Console.WriteLine("");
-            }
-
-
-            accelerator2.Dispose();
-            context2.Dispose();
-            //Console.WriteLine(distphase[0,0]);
 
             num_markers = myphaseData.Count;
-            distphase3 = new float[myphaseData.Count, myphaseData.Count];
-            for (int i = 0; i < myphaseData.Count; i++)
-            {
-                for (int j = 0; j < myphaseData.Count; j++)
-                {
-                    if (distphase2[i, j] == 0) { distphase3[i, j] = 0; }
-                    else
-                    {
-                        distphase3[i, j] = (2*distphase[i, j]-distphase2[i,j]) / distphase2[i, j];
-                        if (distphase3[i, j] < 0) { distphase3[i, j] = 0; }
-                    }
-                }
-            }
-
-            for (int i = 0; i < 10; i++)
-            {
-                for (int j = 0; j < 10; j++)
-                {
-                    Console.Write("\t" + distphase3[i, j]);
-                }
-                Console.WriteLine("");
-            }
-
         }
-
         static void CalcMatchNumKernel(Index2D index, int n_markers, int n_samples,  ArrayView<int> data, ArrayView<int> output)
         {
             //output[i] = data[i % data.Length];
@@ -295,6 +203,43 @@ namespace SELDLA_G
                 }
             }
         }
+        static void CalcMatchRate1lineKernel(Index1D index, int j, int n_markers, int n_samples, ArrayView<int> data, ArrayView<float> output)
+        {
+            int sum1 = 0;
+            int sum2 = 0;
+            int n = 0;
+            int i = index.X;
+            for (int k = 0; k < n_samples; k++)
+            {
+                if (data[i * n_samples + k] != 0 && data[j * n_samples + k] != 0)
+                {
+                    n++;
+                    if (data[i * n_samples + k] == data[j * n_samples + k])
+                    {
+                        sum1++;
+                    }
+                    if (data[i * n_samples + k] == -data[j * n_samples + k])
+                    {
+                        sum2++;
+                    }
+                }
+            }
+            if (n == 0)
+            {
+                output[i] = 0;
+            }
+            else
+            {
+                if (sum1 > sum2)
+                {
+                    output[i] = 2 * sum1 / (float)n - 1.0f;
+                }
+                else
+                {
+                    output[i] = 2 * sum2 / (float)n - 1.0f;
+                }
+            }
+        }
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
@@ -308,44 +253,19 @@ namespace SELDLA_G
 
         protected override void LoadContent()
         {
-            _spriteBatch = new SpriteBatch(GraphicsDevice);
-
             // TODO: use this.Content to load your game content here
             Debug.WriteLine("LoadContent:");
-
+            _spriteBatch = new SpriteBatch(GraphicsDevice);
             whiteRectangle = new Texture2D(GraphicsDevice, 1, 1);
             whiteRectangle.SetData(new[] { Color.White });
+
+
+            openFile("../../../savedate.txt");
+            //openFile("../../../seldla2nd_chain.ld2imp.all.txt");
+
             texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
-            /*            imgData = new int[1000 * 1000];
-                        for(int i = 0; i < imgData.Length; i++)
-                        {
-                            imgData[i] = i;
-                        }
-                        texture.SetData(imgData);
-            */
-            var dataColors = new Color[num_markers * num_markers];
-            for (int i = 0; i < num_markers; i++)
-            {
-                for(int j = 0; j < num_markers; j++)
-                {
-                    dataColors[i * num_markers + j] = new Color((int)(255 * distphase3[i, j]), 0, 0);
-                }
-            }
-            //texture.SetData(0, new Rectangle(0, 0, num_markers, num_markers), dataColors, 0, num_markers * num_markers);
-            texture.SetData(dataColors);
-/*
-            FileStream fileStream = new FileStream("seldla2nd_heatmap_phase_physical.png", FileMode.Open);
-            texture2 = Texture2D.FromStream(GraphicsDevice, fileStream);
-            fileStream.Dispose();
-            Color[] data = new Color[texture2.Width * texture2.Height];
-            texture2.GetData(data);
-            for (int i = 0; i < data.Length; i++)
-            {
-                //if (i < 1000) { Console.WriteLine(data[i].R + " " + data[i].G + " " + data[i].B); }
-                byte gray = (byte)(0.29 * data[i].R + 0.58 * data[i].G + 0.11 * data[i].B);
-                data[i] = new Color(gray, gray, gray, data[i].A);
-            }
-            texture2.SetData(data);*/
+            calcMatchRate1line();
+            setDistTexture();
 
             var w = GraphicsDevice.DisplayMode.Width; //500;
             var h = 80;
@@ -512,7 +432,7 @@ namespace SELDLA_G
 
                 }
                 myphaseData = tempmyphaseData;
-                calcMatchRate();
+                calcMatchRate1line();
                 setDistTexture();
             }
             if (state.IsKeyDown(Keys.T) && changing == false)
@@ -553,17 +473,409 @@ namespace SELDLA_G
                         }
                     }
                     myphaseData = tempmyphaseData;
-                    calcMatchRate();
+                    calcMatchRate1line();
                     setDistTexture();
 
                 }
             }
-            if (state.IsKeyDown(Keys.Y))
+            if (state.IsKeyDown(Keys.Y) && changing == false)
             {
+                changing = true;
+                bool flag = true;
+                List<PhaseData> tempmyphaseData = new List<PhaseData>();
+                for (int i = 0; i < myphaseData.Count; i++)
+                {
+                    if (myphaseData[i].chrorig != myphaseData[pos1.X].chrorig)
+                    {
+                        tempmyphaseData.Add(myphaseData[i]);
+                    }
+                    else if (flag == true && myphaseData[i].chrorig == myphaseData[pos1.X].chrorig)
+                    {
+                        flag = false;
+                        for (int j = myphaseData.Count - 1; j >= 0; j--)
+                        {
+                            if (myphaseData[j].chrorig == myphaseData[pos1.X].chrorig)
+                            {
+                                if (myphaseData[j].chrorient == "+")
+                                {
+                                    myphaseData[j].chrorient = "-";
+                                }
+                                else if (myphaseData[j].chrorient == "-")
+                                {
+                                    myphaseData[j].chrorient = "+";
+                                }
+                                else
+                                {
+                                    myphaseData[j].chrorient = "na";
+                                }
+                                tempmyphaseData.Add(myphaseData[j]);
+                            }
+                        }
+                    }
 
+                }
+                myphaseData = tempmyphaseData;
+                calcMatchRate1line();
+                setDistTexture();
             }
-            if (state.IsKeyDown(Keys.U))
+            if (state.IsKeyDown(Keys.U) && changing == false)
             {
+                changing = true;
+                if (myphaseData[pos1.X].chrorig != myphaseData[pos2.X].chrorig)
+                {
+                    bool flag = true;
+                    bool flag2 = true;
+                    List<PhaseData> tempmyphaseData = new List<PhaseData>();
+                    for (int i = 0; i < myphaseData.Count; i++)
+                    {
+                        if (myphaseData[i].chrorig != myphaseData[pos1.X].chrorig && myphaseData[i].chrorig != myphaseData[pos2.X].chrorig)
+                        {
+                            tempmyphaseData.Add(myphaseData[i]);
+                        }
+                        else if (flag == true && myphaseData[i].chrorig == myphaseData[pos1.X].chrorig)
+                        {
+                            flag = false;
+                            for (int j = 0; j < myphaseData.Count; j++)
+                            {
+                                if (myphaseData[j].chrorig == myphaseData[pos2.X].chrorig)
+                                {
+                                    tempmyphaseData.Add(myphaseData[j]);
+                                }
+                            }
+                        }
+                        else if (flag2 == true && myphaseData[i].chrorig == myphaseData[pos2.X].chrorig)
+                        {
+                            flag2 = false;
+                            for (int j = 0; j < myphaseData.Count; j++)
+                            {
+                                if (myphaseData[j].chrorig == myphaseData[pos1.X].chrorig)
+                                {
+                                    tempmyphaseData.Add(myphaseData[j]);
+                                }
+                            }
+                        }
+                    }
+                    myphaseData = tempmyphaseData;
+                    calcMatchRate1line();
+                    setDistTexture();
+
+                }
+            }
+            if (state.IsKeyDown(Keys.N) && changing == false)
+            {
+                changing = true;
+                if (markN == 0)
+                {
+                    markN = 1;
+                    for (int i = pos1.X; i < myphaseData.Count; i++)
+                    {
+                        if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { markNend[0] = i; } else { break; }
+                    }
+                    for (int i = pos1.X; i >= 0; i--)
+                    {
+                        if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { markNstart[0] = i; } else { break; }
+                    }
+                }
+                else if(markN == 1)
+                {
+                    markN = 0;
+                    for (int i = pos1.X; i < myphaseData.Count; i++)
+                    {
+                        if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig){markNend[1] = i;}else{break;}
+                    }
+                    for (int i = pos1.X; i >= 0; i--)
+                    {
+                        if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig){markNstart[1] = i;}else{break;}
+                    }
+                    if (markNstart[0] < markNstart[1])
+                    {
+                        markNstart[2] = markNstart[0];
+                        markNend[2] = markNend[1];
+                    }
+                    else
+                    {
+                        markNstart[2] = markNstart[1];
+                        markNend[2] = markNend[0];
+                    }
+
+                    bool flag = true;
+                    List<PhaseData> tempmyphaseData = new List<PhaseData>();
+                    for (int i = 0; i < myphaseData.Count; i++)
+                    {
+                        if (i < markNstart[2] || i > markNend[2])
+                        {
+                            tempmyphaseData.Add(myphaseData[i]);
+                        }
+                        else if (flag == true)
+                        {
+                            flag = false;
+                            for (int j = myphaseData.Count - 1; j >= 0; j--)
+                            {
+                                if (j >= markNstart[2] && j <= markNend[2])
+                                {
+                                    if (myphaseData[j].chrorient == "+")
+                                    {
+                                        myphaseData[j].chrorient = "-";
+                                    }
+                                    else if (myphaseData[j].chrorient == "-")
+                                    {
+                                        myphaseData[j].chrorient = "+";
+                                    }
+                                    else
+                                    {
+                                        myphaseData[j].chrorient = "na";
+                                    }
+                                    tempmyphaseData.Add(myphaseData[j]);
+                                }
+                            }
+                        }
+
+                    }
+                    myphaseData = tempmyphaseData;
+                    calcMatchRate1line();
+                    setDistTexture();
+                }
+            }
+
+            if (state.IsKeyDown(Keys.M) && changing == false)
+            {
+                changing = true;
+                if (markM == 0)
+                {
+                    markM = 1;
+                    for (int i = pos1.X; i < myphaseData.Count; i++)
+                    {
+                        if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { markMend1[0] = i; } else { break; }
+                    }
+                    for (int i = pos1.X; i >= 0; i--)
+                    {
+                        if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { markMstart1[0] = i; } else { break; }
+                    }
+                }
+                else if (markM == 1)
+                {
+                    markM = 2;
+                    for (int i = pos1.X; i < myphaseData.Count; i++)
+                    {
+                        if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { markMend1[1] = i; } else { break; }
+                    }
+                    for (int i = pos1.X; i >= 0; i--)
+                    {
+                        if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { markMstart1[1] = i; } else { break; }
+                    }
+
+                    if (markMstart1[0] < markMstart1[1])
+                    {
+                        markMstart1[2] = markMstart1[0];
+                        markMend1[2] = markMend1[1];
+                    }
+                    else
+                    {
+                        markMstart1[2] = markMstart1[1];
+                        markMend1[2] = markMend1[0];
+                    }
+                }
+                else if (markM == 2)
+                {
+                    markM = 3;
+                    for (int i = pos1.X; i < myphaseData.Count; i++)
+                    {
+                        if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { markMend2[0] = i; } else { break; }
+                    }
+                    for (int i = pos1.X; i >= 0; i--)
+                    {
+                        if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { markMstart2[0] = i; } else { break; }
+                    }
+                }
+                else if (markM == 3)
+                {
+                    markM = 0;
+                    for (int i = pos1.X; i < myphaseData.Count; i++)
+                    {
+                        if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { markMend2[1] = i; } else { break; }
+                    }
+                    for (int i = pos1.X; i >= 0; i--)
+                    {
+                        if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { markMstart2[1] = i; } else { break; }
+                    }
+
+                    if (markMstart2[0] < markMstart2[1])
+                    {
+                        markMstart2[2] = markMstart2[0];
+                        markMend2[2] = markMend2[1];
+                    }
+                    else
+                    {
+                        markMstart2[2] = markMstart2[1];
+                        markMend2[2] = markMend2[0];
+                    }
+
+                    //1回目と2回目に選択した領域が入れ子になっていないことの確認
+                    if (!(markMstart1[2] >= markMstart2[2] && markMstart1[2] <= markMend2[2])
+                        && !(markMend1[2] >= markMstart2[2] && markMend1[2] <= markMend2[2])
+                        && !(markMstart2[2] >= markMstart1[2] && markMstart2[2] <= markMend1[2])
+                        && !(markMend2[2] >= markMstart1[2] && markMend2[2] <= markMend1[2]))
+                    {
+                        bool flag = true;
+                        bool flag2 = true;
+                        List<PhaseData> tempmyphaseData = new List<PhaseData>();
+                        for (int i = 0; i < myphaseData.Count; i++)
+                        {
+                            if (!(i >= markMstart1[2] && i <= markMend1[2]) && !(i >= markMstart2[2] && i <= markMend2[2]))
+                            {
+                                tempmyphaseData.Add(myphaseData[i]);
+                            }
+                            else if (flag == true && i >= markMstart1[2] && i <= markMend1[2])
+                            {
+                                flag = false;
+                                for (int j = 0; j < myphaseData.Count; j++)
+                                {
+                                    if (j >= markMstart2[2] && j <= markMend2[2])
+                                    {
+                                        tempmyphaseData.Add(myphaseData[j]);
+                                    }
+                                }
+                            }
+                            else if (flag2 == true && i >= markMstart2[2] && i <= markMend2[2])
+                            {
+                                flag2 = false;
+                                for (int j = 0; j < myphaseData.Count; j++)
+                                {
+                                    if (j >= markMstart1[2] && j <= markMend1[2])
+                                    {
+                                        tempmyphaseData.Add(myphaseData[j]);
+                                    }
+                                }
+                            }
+                        }
+                        myphaseData = tempmyphaseData;
+                        calcMatchRate1line();
+                        setDistTexture();
+
+                    }
+                    else
+                    {
+                        Console.WriteLine("Error: Regions 1 and 2 overlap.");
+                    }
+                }
+            }
+
+            if (state.IsKeyDown(Keys.E) && changing == false)
+            {
+                changing = true;
+                if (markN == 0)
+                {
+                    markN = 1;
+                    for (int i = pos1.X; i < myphaseData.Count; i++)
+                    {
+                        if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { markNend[0] = i; } else { break; }
+                    }
+                    for (int i = pos1.X; i >= 0; i--)
+                    {
+                        if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { markNstart[0] = i; } else { break; }
+                    }
+                }
+                else if (markN == 1)
+                {
+                    markN = 0;
+                    for (int i = pos1.X; i < myphaseData.Count; i++)
+                    {
+                        if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { markNend[1] = i; } else { break; }
+                    }
+                    for (int i = pos1.X; i >= 0; i--)
+                    {
+                        if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { markNstart[1] = i; } else { break; }
+                    }
+                    if (markNstart[0] < markNstart[1])
+                    {
+                        markNstart[2] = markNstart[0];
+                        markNend[2] = markNend[1];
+                    }
+                    else
+                    {
+                        markNstart[2] = markNstart[1];
+                        markNend[2] = markNend[0];
+                    }
+
+                    var templist = new List<string>();
+                    for(int i = markNstart[2]; i <= markNend[2]; i++)
+                    {
+                        templist.Add(myphaseData[i].chr2nd);
+                    }
+                    Console.WriteLine("Original chr names:");
+                    templist.Distinct().ToList().ForEach(c => Console.WriteLine(c));
+                    Console.WriteLine("Input new chr name");
+                    var str = Console.ReadLine();
+
+                    List<PhaseData> tempmyphaseData = new List<PhaseData>();
+                    for (int i = 0; i < myphaseData.Count; i++)
+                    {
+                        if (i >= markNstart[2] && i <= markNend[2])
+                        {
+                            myphaseData[i].chr2nd = str;
+                        }
+
+                    }
+                }
+            }
+
+            if (state.IsKeyDown(Keys.S) && changing == false)
+            {
+                changing = true;
+                Console.WriteLine("Enter the name of the file you want to save. [\""+savefilename+"\"]");
+                var str = Console.ReadLine();
+                if (str != "") { savefilename = str; }
+
+                string[] result = new string[myphaseData.Count];
+                for (int i = 0; i < result.Length; i++)
+                {
+                    StringBuilder strb = new StringBuilder(myphaseData[i].chr2nd + "\t" + myphaseData[i].chr2nd);
+                    if(myphaseData[i].chrorient == "+" || myphaseData[i].chrorient == "-")
+                    {
+                        strb.Append("\t+\t" + myphaseData[i].chrorient);
+                    }
+                    else
+                    {
+                        strb.Append("\tna\t"+myphaseData[i].chrorient);
+                    }
+                    strb.Append("\t" +myphaseData[i].chrorig+"\t"+myphaseData[i].markerpos);
+                    for(int j = 0; j<myphaseData[i].dataphase.Count; j++)
+                    {
+                        if(myphaseData[i].dataphase[j] == 1)
+                        {
+                            strb.Append("\t1");
+                        }else if(myphaseData[i].dataphase[j] == -1)
+                        {
+                            strb.Append("\t0");
+                        }
+                        else
+                        {
+                            strb.Append("\t-1");
+                        }
+                    }
+                    strb.Append("\n");
+                    result[i] = strb.ToString();
+                }
+                Console.WriteLine("Saving to "+savefilename);
+                System.IO.File.WriteAllLines(savefilename, result);
+            }
+
+            if (state.IsKeyDown(Keys.O) && changing == false)
+            {
+                changing = true;
+                Console.WriteLine("Enter the name of the file you want to open. [\"../../../savedata.txt\"]");
+                var str = Console.ReadLine();
+                try
+                {
+                    openFile(str);
+                    texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
+                    calcMatchRate1line();
+                    setDistTexture();
+
+                }catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
 
             }
 
@@ -584,14 +896,83 @@ namespace SELDLA_G
             //_spriteBatch.Draw(texture, Vector2.Zero, color);
             //_spriteBatch.Draw(texture, new Vector2((float)worldX, (float)worldY), null, Color.White, 0.0f, Vector2.Zero, new Vector2(2.0f, 0.5f), SpriteEffects.None, 0.0f);
             //_spriteBatch.Draw(texture2, Vector2.Zero, Color.White);
-            _spriteBatch.Draw(whiteRectangle, new Rectangle((int)(inworldX * worldW + worldX), (int)(inworldX * worldW + worldY), 1, (int)(1*worldW)), new Color(255, 255, 0, 255));
+            /*_spriteBatch.Draw(whiteRectangle, new Rectangle((int)(inworldX * worldW + worldX), (int)(inworldX * worldW + worldY), 1, (int)(1*worldW)), new Color(255, 255, 0, 255));
             _spriteBatch.Draw(whiteRectangle, new Rectangle((int)((inworldX+1) * worldW + worldX), (int)(inworldX * worldW + worldY), 1, (int)(1 * worldW)), new Color(255, 255, 0, 255));
             _spriteBatch.Draw(whiteRectangle, new Rectangle((int)(inworldX * worldW + worldX), (int)(inworldX * worldW + worldY), (int)(1 * worldW), 1), new Color(255, 255, 0, 255));
             _spriteBatch.Draw(whiteRectangle, new Rectangle((int)(inworldX * worldW + worldX), (int)((inworldX+1) * worldW + worldY), (int)(1 * worldW), 1), new Color(255, 255, 0, 255));
-
+*/
             drawRect(_spriteBatch, whiteRectangle, pos1.chrStart, pos1.chrEnd - pos1.chrStart + 1, Color.Yellow);
             drawRect(_spriteBatch, whiteRectangle, pos1.contigStart, pos1.contigEnd - pos1.contigStart + 1, Color.Green);
+            drawRect(_spriteBatch, whiteRectangle, pos2.chrStart, pos2.chrEnd - pos2.chrStart + 1, Color.Yellow);
+            drawRect(_spriteBatch, whiteRectangle, pos2.contigStart, pos2.contigEnd - pos2.contigStart + 1, Color.Green);
 
+            if(markN == 1)
+            {
+                int tempNstart = -1;
+                int tempNend = -1;
+                for (int i = pos1.X; i < myphaseData.Count; i++)
+                {
+                    if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { tempNend = i; } else { break; }
+                }
+                for (int i = pos1.X; i >= 0; i--)
+                {
+                    if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { tempNstart = i; } else { break; }
+                }
+                if (tempNstart >= markNstart[0])
+                {
+                    drawRect(_spriteBatch, whiteRectangle, markNstart[0],tempNend - markNstart[0] + 1,Color.Red);
+                }
+                else
+                {
+                    drawRect(_spriteBatch, whiteRectangle, tempNstart,markNend[0] - tempNstart + 1,Color.Red);
+                }
+
+            }
+            if (markM == 1)
+            {
+                int tempMstart1 = -1;
+                int tempMend1 = -1;
+                for (int i = pos1.X; i < myphaseData.Count; i++)
+                {
+                    if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { tempMend1 = i; } else { break; }
+                }
+                for (int i = pos1.X; i >= 0; i--)
+                {
+                    if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { tempMstart1 = i; } else { break; }
+                }
+                if (tempMstart1 >= markMstart1[0])
+                {
+                    drawRect(_spriteBatch, whiteRectangle, markMstart1[0], tempMend1 - markMstart1[0] + 1, Color.Red);
+                }
+                else
+                {
+                    drawRect(_spriteBatch, whiteRectangle, tempMstart1, markMend1[0] - tempMstart1 + 1, Color.Red);
+                }
+            }else if(markM == 2)
+            {
+                drawRect(_spriteBatch, whiteRectangle, markMstart1[2], markMend1[2] - markMstart1[2] + 1, Color.Red);
+            }else if(markM == 3)
+            {
+                drawRect(_spriteBatch, whiteRectangle, markMstart1[2], markMend1[2] - markMstart1[2] + 1, Color.Red);
+                int tempMstart1 = -1;
+                int tempMend1 = -1;
+                for (int i = pos1.X; i < myphaseData.Count; i++)
+                {
+                    if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { tempMend1 = i; } else { break; }
+                }
+                for (int i = pos1.X; i >= 0; i--)
+                {
+                    if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { tempMstart1 = i; } else { break; }
+                }
+                if (tempMstart1 >= markMstart2[0])
+                {
+                    drawRect(_spriteBatch, whiteRectangle, markMstart2[0], tempMend1 - markMstart2[0] + 1, Color.Red);
+                }
+                else
+                {
+                    drawRect(_spriteBatch, whiteRectangle, tempMstart1, markMend2[0] - tempMstart1 + 1, Color.Red);
+                }
+            }
 
             _spriteBatch.Draw(texturePop, new Vector2(0, 0), Color.White);
 
@@ -627,6 +1008,7 @@ namespace SELDLA_G
             accelerator2.Synchronize();
             float[] hostOutput2 = deviceOutput2.GetAsArray1D();
             Console.WriteLine(hostOutput2.Length);
+            distphase3 = new float[myphaseData.Count, myphaseData.Count];
             for (int i = 0; i < myphaseData.Count; i++)
             {
                 for (int j = 0; j < myphaseData.Count; j++)
@@ -645,6 +1027,38 @@ namespace SELDLA_G
             }
             accelerator2.Dispose();
             context2.Dispose();
+        }
+        void calcMatchRate1line()
+        {
+            int[] phaseForGPU = new int[myphaseData.Count * myphaseData[0].dataphase.Count];
+            for (int i = 0; i < myphaseData.Count; i++)
+            {
+                for (int j = 0; j < myphaseData[0].dataphase.Count; j++)
+                {
+                    phaseForGPU[i * myphaseData[0].dataphase.Count + j] = myphaseData[i].dataphase[j];
+                }
+            }
+            distphase3 = new float[myphaseData.Count, myphaseData.Count];
+            using Context context2 = Context.Create(builder => builder.AllAccelerators()); //Context.Create(builder => builder.OpenCL());
+            Accelerator accelerator2 = context2.GetPreferredDevice(preferCPU: false).CreateAccelerator(context2);
+            MemoryBuffer1D<int, Stride1D.Dense> deviceData2 = accelerator2.Allocate1D(phaseForGPU);
+            MemoryBuffer1D<float, Stride1D.Dense> deviceOutput2 = accelerator2.Allocate1D<float>(myphaseData.Count);
+            Action<Index1D, int, int, int, ArrayView<int>, ArrayView<float>> loadedKernel2 =
+                accelerator2.LoadAutoGroupedStreamKernel<Index1D, int, int, int, ArrayView<int>, ArrayView<float>>(CalcMatchRate1lineKernel);
+            for (int j = 0; j < myphaseData.Count; j++)
+            {
+                loadedKernel2(new Index1D(myphaseData.Count), j, myphaseData.Count, myphaseData[0].dataphase.Count, deviceData2.View, deviceOutput2.View);
+                accelerator2.Synchronize();
+                float[] hostOutput2 = deviceOutput2.GetAsArray1D();
+                //Console.WriteLine(hostOutput2.Length);
+                for (int i = 0; i < myphaseData.Count; i++)
+                {
+                        distphase3[i, j] = hostOutput2[i];
+                }
+            }
+            accelerator2.Dispose();
+            context2.Dispose();
+
         }
         void setDistTexture()
         {
