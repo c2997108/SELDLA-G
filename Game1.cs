@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-//using System.Threading;
 using System.Text.RegularExpressions;
 using ILGPU;
 using ILGPU.Runtime;
@@ -62,11 +61,11 @@ namespace SELDLA_G
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
 
-            using Context context = Context.Create(builder => builder.AllAccelerators());
+/*            using Context context = Context.Create(builder => builder.AllAccelerators());
             Debug.WriteLine("Context: " + context.ToString());
             Accelerator accelerator = context.GetPreferredDevice(preferCPU: false)
                                       .CreateAccelerator(context);
-            accelerator.PrintInformation();
+            accelerator.PrintInformation();*/
         }
 
         void openFile(string filename)
@@ -117,54 +116,6 @@ namespace SELDLA_G
 
 
             num_markers = myphaseData.Count;
-        }
-        static void CalcMatchNumKernel(Index2D index, int n_markers, int n_samples,  ArrayView<int> data, ArrayView<int> output)
-        {
-            //output[i] = data[i % data.Length];
-            //output[i] = i + j;
-            
-            int sum1 = 0;
-            int sum2 = 0;
-            int i = index.X;
-            int j = index.Y;
-            for (int k = 0; k < n_samples; k++)
-            {
-                if(data[i * n_samples + k]!=0 && data[j * n_samples + k] != 0)
-                {
-                    if (data[i * n_samples + k] == data[j * n_samples + k])
-                    {
-                        sum1++;
-                    }
-                    if (data[i * n_samples + k] == -data[j * n_samples + k])
-                    {
-                        sum2++;
-                    }
-                }
-            }
-            if (sum1 > sum2)
-            {
-                output[i * n_markers + j] = sum1;
-            }
-            else
-            {
-                output[i * n_markers + j] = sum2;
-            }
-
-        }
-        static void CalcNotNANumKernel(Index2D index, int n_markers, int n_samples, ArrayView<int> data, ArrayView<int> output)
-        {
-            int n = 0;
-            int i = index.X;
-            int j = index.Y;
-            for (int k = 0; k < n_samples; k++)
-            {
-                if (data[i * n_samples + k] != 0 && data[j * n_samples + k] != 0)
-                {
-                    n++;
-                }
-            }
-            output[i * n_markers + j] = n;
-
         }
         static void CalcMatchRateKernel(Index2D index, int n_markers, int n_samples, ArrayView<int> data, ArrayView<float> output)
         {
@@ -243,8 +194,10 @@ namespace SELDLA_G
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
-            _graphics.PreferredBackBufferWidth = 2000; // GraphicsDevice.DisplayMode.Width;
-            _graphics.PreferredBackBufferHeight = 1000; // GraphicsDevice.DisplayMode.Height;
+            _graphics.PreferredBackBufferWidth = GraphicsDevice.DisplayMode.Width;
+            _graphics.PreferredBackBufferHeight = GraphicsDevice.DisplayMode.Height;
+            //_graphics.PreferredBackBufferWidth = 2000;
+            //_graphics.PreferredBackBufferHeight = 1000;
             //_graphics.IsFullScreen = true;
             _graphics.ApplyChanges();
 
@@ -259,8 +212,8 @@ namespace SELDLA_G
             whiteRectangle = new Texture2D(GraphicsDevice, 1, 1);
             whiteRectangle.SetData(new[] { Color.White });
 
-            openFile("savedate.txt");
-            //openFile("../../../savedate.txt");
+            //openFile("savedate.txt");
+            openFile("../../../savedate.txt");
             //openFile("../../../seldla2nd_chain.ld2imp.all.txt");
 
             texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
@@ -354,25 +307,12 @@ namespace SELDLA_G
                 worldX = stage.X + mouse.X-lastPos.Value.X;
                 worldY = stage.Y + mouse.Y-lastPos.Value.Y;
 
-                //if (startPosition == null)
-                //{// ドラッグ開始
-                //    startPosition = mouse.Position.ToVector2();
-                //}
-                //else
-                //{// ドラッグ中
-                //    deltaPosition = mouse.Position.ToVector2();
-                //}
             }
             else if(mouse.LeftButton == ButtonState.Released)
             {
                 stage = new Point(worldX, worldY);
                 lastPos = null;
-            }/*else
-            {
-                startPosition = null;
-                deltaPosition = null;
-            }*/
-
+            }
             // Poll for current keyboard state
             KeyboardState state = Keyboard.GetState();
 
@@ -890,17 +830,8 @@ namespace SELDLA_G
             Debug.WriteLine("Draw:");
 
             _spriteBatch.Begin();
-            //_spriteBatch.Draw(whiteRectangle, new Rectangle(worldX, worldY, 80, 30), Color.Chocolate);
-            //Color color = new Color(128, 128, 128, 128);
             _spriteBatch.Draw(texture, new Vector2((float)worldX, (float)worldY), null, Color.White, 0.0f, Vector2.Zero, new Vector2((float)worldW, (float)worldW), SpriteEffects.None, 0.0f);
-            //_spriteBatch.Draw(texture, Vector2.Zero, color);
-            //_spriteBatch.Draw(texture, new Vector2((float)worldX, (float)worldY), null, Color.White, 0.0f, Vector2.Zero, new Vector2(2.0f, 0.5f), SpriteEffects.None, 0.0f);
-            //_spriteBatch.Draw(texture2, Vector2.Zero, Color.White);
-            /*_spriteBatch.Draw(whiteRectangle, new Rectangle((int)(inworldX * worldW + worldX), (int)(inworldX * worldW + worldY), 1, (int)(1*worldW)), new Color(255, 255, 0, 255));
-            _spriteBatch.Draw(whiteRectangle, new Rectangle((int)((inworldX+1) * worldW + worldX), (int)(inworldX * worldW + worldY), 1, (int)(1 * worldW)), new Color(255, 255, 0, 255));
-            _spriteBatch.Draw(whiteRectangle, new Rectangle((int)(inworldX * worldW + worldX), (int)(inworldX * worldW + worldY), (int)(1 * worldW), 1), new Color(255, 255, 0, 255));
-            _spriteBatch.Draw(whiteRectangle, new Rectangle((int)(inworldX * worldW + worldX), (int)((inworldX+1) * worldW + worldY), (int)(1 * worldW), 1), new Color(255, 255, 0, 255));
-*/
+
             drawRect(_spriteBatch, whiteRectangle, pos1.chrStart, pos1.chrEnd - pos1.chrStart + 1, Color.Yellow);
             drawRect(_spriteBatch, whiteRectangle, pos1.contigStart, pos1.contigEnd - pos1.contigStart + 1, Color.Green);
             drawRect(_spriteBatch, whiteRectangle, pos2.chrStart, pos2.chrEnd - pos2.chrStart + 1, Color.Yellow);
@@ -1000,6 +931,7 @@ namespace SELDLA_G
             }
             using Context context2 = Context.Create(builder => builder.AllAccelerators());
             Accelerator accelerator2 = context2.GetPreferredDevice(preferCPU: false).CreateAccelerator(context2);
+            accelerator2.PrintInformation();
             MemoryBuffer1D<int, Stride1D.Dense> deviceData2 = accelerator2.Allocate1D(phaseForGPU);
             MemoryBuffer1D<float, Stride1D.Dense> deviceOutput2 = accelerator2.Allocate1D<float>(myphaseData.Count * myphaseData.Count);
             Action<Index2D, int, int, ArrayView<int>, ArrayView<float>> loadedKernel2 =
@@ -1041,6 +973,7 @@ namespace SELDLA_G
             distphase3 = new float[myphaseData.Count, myphaseData.Count];
             using Context context2 = Context.Create(builder => builder.AllAccelerators()); //Context.Create(builder => builder.OpenCL());
             Accelerator accelerator2 = context2.GetPreferredDevice(preferCPU: false).CreateAccelerator(context2);
+            accelerator2.PrintInformation();
             MemoryBuffer1D<int, Stride1D.Dense> deviceData2 = accelerator2.Allocate1D(phaseForGPU);
             MemoryBuffer1D<float, Stride1D.Dense> deviceOutput2 = accelerator2.Allocate1D<float>(myphaseData.Count);
             Action<Index1D, int, int, int, ArrayView<int>, ArrayView<float>> loadedKernel2 =
