@@ -340,42 +340,9 @@ namespace SELDLA_G
             if (state.IsKeyDown(Keys.R) && changing == false)
             {
                 changing = true;
-                bool flag = true;
-                List<PhaseData> tempmyphaseData = new List<PhaseData>();
-                for (int i = 0; i < myphaseData.Count; i++)
-                {
-                    if(myphaseData[i].chr2nd != myphaseData[pos1.X].chr2nd)
-                    {
-                        tempmyphaseData.Add(myphaseData[i]);
-                    }
-                    else if(flag == true && myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd)
-                    {
-                        flag = false;
-                        for(int j = myphaseData.Count-1; j >= 0; j--)
-                        {
-                            if (myphaseData[j].chr2nd == myphaseData[pos1.X].chr2nd)
-                            {
-                                if (myphaseData[j].chrorient == "+")
-                                {
-                                    myphaseData[j].chrorient = "-";
-                                }
-                                else if (myphaseData[j].chrorient == "-")
-                                {
-                                    myphaseData[j].chrorient = "+";
-                                }
-                                else
-                                {
-                                    myphaseData[j].chrorient = "na";
-                                }
-                                tempmyphaseData.Add(myphaseData[j]);
-                            }
-                        }
-                    }
-
-                }
 
                 updateDistanceReverse(pos1.chrStart, pos1.chrEnd);
-                myphaseData = tempmyphaseData;
+                myphaseData = updatePhaseReverse(pos1.chrStart, pos1.chrEnd);
                 //calcMatchRate1line();
                 setDistTexture();
             }
@@ -384,41 +351,8 @@ namespace SELDLA_G
                 changing = true;
                 if(myphaseData[pos1.X].chr2nd != myphaseData[pos2.X].chr2nd)
                 {
-                    bool flag = true;
-                    bool flag2 = true;
-                    List<PhaseData> tempmyphaseData = new List<PhaseData>();
-                    for (int i = 0; i < myphaseData.Count; i++)
-                    {
-                        if (myphaseData[i].chr2nd != myphaseData[pos1.X].chr2nd && myphaseData[i].chr2nd != myphaseData[pos2.X].chr2nd)
-                        {
-                            tempmyphaseData.Add(myphaseData[i]);
-                        }
-                        else if (flag == true && myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd)
-                        {
-                            flag = false;
-                            for(int j = 0; j < myphaseData.Count; j++)
-                            {
-                                if (myphaseData[j].chr2nd == myphaseData[pos2.X].chr2nd)
-                                {
-                                    tempmyphaseData.Add(myphaseData[j]);
-                                }
-                            }
-                        }
-                        else if(flag2 == true && myphaseData[i].chr2nd == myphaseData[pos2.X].chr2nd)
-                        {
-                            flag2 = false;
-                            for( int j = 0; j < myphaseData.Count; j++)
-                            {
-                                if(myphaseData[j].chr2nd == myphaseData[pos1.X].chr2nd)
-                                {
-                                    tempmyphaseData.Add(myphaseData[j]);
-                                }
-                            }
-                        }
-                    }
-
                     updateDistanceChange(pos1.chrStart, pos1.chrEnd, pos2.chrStart, pos2.chrEnd);
-                    myphaseData = tempmyphaseData;
+                    myphaseData = updatePhaseChange(pos1.chrStart, pos1.chrEnd, pos2.chrStart, pos2.chrEnd);
                     //calcMatchRate1line();
                     setDistTexture();
 
@@ -427,42 +361,9 @@ namespace SELDLA_G
             if (state.IsKeyDown(Keys.Y) && changing == false)
             {
                 changing = true;
-                bool flag = true;
-                List<PhaseData> tempmyphaseData = new List<PhaseData>();
-                for (int i = 0; i < myphaseData.Count; i++)
-                {
-                    if (myphaseData[i].chrorig != myphaseData[pos1.X].chrorig)
-                    {
-                        tempmyphaseData.Add(myphaseData[i]);
-                    }
-                    else if (flag == true && myphaseData[i].chrorig == myphaseData[pos1.X].chrorig)
-                    {
-                        flag = false;
-                        for (int j = myphaseData.Count - 1; j >= 0; j--)
-                        {
-                            if (myphaseData[j].chrorig == myphaseData[pos1.X].chrorig)
-                            {
-                                if (myphaseData[j].chrorient == "+")
-                                {
-                                    myphaseData[j].chrorient = "-";
-                                }
-                                else if (myphaseData[j].chrorient == "-")
-                                {
-                                    myphaseData[j].chrorient = "+";
-                                }
-                                else
-                                {
-                                    myphaseData[j].chrorient = "na";
-                                }
-                                tempmyphaseData.Add(myphaseData[j]);
-                            }
-                        }
-                    }
-
-                }
 
                 updateDistanceReverse(pos1.contigStart, pos1.contigEnd);
-                myphaseData = tempmyphaseData;
+                myphaseData = updatePhaseReverse(pos1.contigStart, pos1.contigEnd);
                 //calcMatchRate1line();
                 setDistTexture();
             }
@@ -471,41 +372,8 @@ namespace SELDLA_G
                 changing = true;
                 if (myphaseData[pos1.X].chrorig != myphaseData[pos2.X].chrorig)
                 {
-                    bool flag = true;
-                    bool flag2 = true;
-                    List<PhaseData> tempmyphaseData = new List<PhaseData>();
-                    for (int i = 0; i < myphaseData.Count; i++)
-                    {
-                        if (myphaseData[i].chrorig != myphaseData[pos1.X].chrorig && myphaseData[i].chrorig != myphaseData[pos2.X].chrorig)
-                        {
-                            tempmyphaseData.Add(myphaseData[i]);
-                        }
-                        else if (flag == true && myphaseData[i].chrorig == myphaseData[pos1.X].chrorig)
-                        {
-                            flag = false;
-                            for (int j = 0; j < myphaseData.Count; j++)
-                            {
-                                if (myphaseData[j].chrorig == myphaseData[pos2.X].chrorig)
-                                {
-                                    tempmyphaseData.Add(myphaseData[j]);
-                                }
-                            }
-                        }
-                        else if (flag2 == true && myphaseData[i].chrorig == myphaseData[pos2.X].chrorig)
-                        {
-                            flag2 = false;
-                            for (int j = 0; j < myphaseData.Count; j++)
-                            {
-                                if (myphaseData[j].chrorig == myphaseData[pos1.X].chrorig)
-                                {
-                                    tempmyphaseData.Add(myphaseData[j]);
-                                }
-                            }
-                        }
-                    }
-
                     updateDistanceChange(pos1.contigStart, pos1.contigEnd, pos2.contigStart, pos2.contigEnd);
-                    myphaseData = tempmyphaseData;
+                    myphaseData = updatePhaseChange(pos1.contigStart, pos1.contigEnd, pos2.contigStart, pos2.contigEnd);
                     //calcMatchRate1line();
                     setDistTexture();
 
@@ -548,41 +416,8 @@ namespace SELDLA_G
                         markNend[2] = markNend[0];
                     }
 
-                    bool flag = true;
-                    List<PhaseData> tempmyphaseData = new List<PhaseData>();
-                    for (int i = 0; i < myphaseData.Count; i++)
-                    {
-                        if (i < markNstart[2] || i > markNend[2])
-                        {
-                            tempmyphaseData.Add(myphaseData[i]);
-                        }
-                        else if (flag == true)
-                        {
-                            flag = false;
-                            for (int j = myphaseData.Count - 1; j >= 0; j--)
-                            {
-                                if (j >= markNstart[2] && j <= markNend[2])
-                                {
-                                    if (myphaseData[j].chrorient == "+")
-                                    {
-                                        myphaseData[j].chrorient = "-";
-                                    }
-                                    else if (myphaseData[j].chrorient == "-")
-                                    {
-                                        myphaseData[j].chrorient = "+";
-                                    }
-                                    else
-                                    {
-                                        myphaseData[j].chrorient = "na";
-                                    }
-                                    tempmyphaseData.Add(myphaseData[j]);
-                                }
-                            }
-                        }
-
-                    }
                     updateDistanceReverse(markNstart[2], markNend[2]);
-                    myphaseData = tempmyphaseData;
+                    myphaseData = updatePhaseReverse(markNstart[2], markNend[2]);
                     //calcMatchRate1line();
                     setDistTexture();
                 }
@@ -667,41 +502,8 @@ namespace SELDLA_G
                         && !(markMstart2[2] >= markMstart1[2] && markMstart2[2] <= markMend1[2])
                         && !(markMend2[2] >= markMstart1[2] && markMend2[2] <= markMend1[2]))
                     {
-                        bool flag = true;
-                        bool flag2 = true;
-                        List<PhaseData> tempmyphaseData = new List<PhaseData>();
-                        for (int i = 0; i < myphaseData.Count; i++)
-                        {
-                            if (!(i >= markMstart1[2] && i <= markMend1[2]) && !(i >= markMstart2[2] && i <= markMend2[2]))
-                            {
-                                tempmyphaseData.Add(myphaseData[i]);
-                            }
-                            else if (flag == true && i >= markMstart1[2] && i <= markMend1[2])
-                            {
-                                flag = false;
-                                for (int j = 0; j < myphaseData.Count; j++)
-                                {
-                                    if (j >= markMstart2[2] && j <= markMend2[2])
-                                    {
-                                        tempmyphaseData.Add(myphaseData[j]);
-                                    }
-                                }
-                            }
-                            else if (flag2 == true && i >= markMstart2[2] && i <= markMend2[2])
-                            {
-                                flag2 = false;
-                                for (int j = 0; j < myphaseData.Count; j++)
-                                {
-                                    if (j >= markMstart1[2] && j <= markMend1[2])
-                                    {
-                                        tempmyphaseData.Add(myphaseData[j]);
-                                    }
-                                }
-                            }
-                        }
-
                         updateDistanceChange(markMstart1[2], markMend1[2], markMstart2[2], markMend2[2]);
-                        myphaseData = tempmyphaseData;
+                        myphaseData = updatePhaseChange(markMstart1[2], markMend1[2], markMstart2[2], markMend2[2]);
                         //calcMatchRate1line();
                         setDistTexture();
 
@@ -1006,7 +808,44 @@ namespace SELDLA_G
             context2.Dispose();
 
         }
+        List<PhaseData> updatePhaseReverse(int areaStart, int areaEnd)
+        {
 
+            bool flag = true;
+            List<PhaseData> tempmyphaseData = new List<PhaseData>();
+            for (int i = 0; i < myphaseData.Count; i++)
+            {
+                if (i < areaStart || i > areaEnd)
+                {
+                    tempmyphaseData.Add(myphaseData[i]);
+                }
+                else if (flag == true)
+                {
+                    flag = false;
+                    for (int j = myphaseData.Count - 1; j >= 0; j--)
+                    {
+                        if (j >= areaStart && j <= areaEnd)
+                        {
+                            if (myphaseData[j].chrorient == "+")
+                            {
+                                myphaseData[j].chrorient = "-";
+                            }
+                            else if (myphaseData[j].chrorient == "-")
+                            {
+                                myphaseData[j].chrorient = "+";
+                            }
+                            else
+                            {
+                                myphaseData[j].chrorient = "na";
+                            }
+                            tempmyphaseData.Add(myphaseData[j]);
+                        }
+                    }
+                }
+
+            }
+            return tempmyphaseData;
+        }
         void updateDistanceReverse(int areaStart, int areaEnd)
         {
             System.Threading.Tasks.Parallel.For(0, myphaseData.Count, j => {
