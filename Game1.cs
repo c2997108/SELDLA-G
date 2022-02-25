@@ -213,8 +213,9 @@ namespace SELDLA_G
             whiteRectangle.SetData(new[] { Color.White });
 
             //openFile("savedate.txt");
-            openFile("../../../savedate.txt");
+            //openFile("../../../savedate.txt");
             //openFile("../../../seldla2nd_chain.ld2imp.all.txt");
+            openFile("../../../seldla2nd_chain.ph.all.txt");
 
             texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
             calcMatchRate1line();
@@ -341,12 +342,13 @@ namespace SELDLA_G
                 changing = true;
                 bool flag = true;
                 List<PhaseData> tempmyphaseData = new List<PhaseData>();
-                for(int i = 0; i < myphaseData.Count; i++)
+                for (int i = 0; i < myphaseData.Count; i++)
                 {
                     if(myphaseData[i].chr2nd != myphaseData[pos1.X].chr2nd)
                     {
                         tempmyphaseData.Add(myphaseData[i]);
-                    }else if(flag == true && myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd)
+                    }
+                    else if(flag == true && myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd)
                     {
                         flag = false;
                         for(int j = myphaseData.Count-1; j >= 0; j--)
@@ -371,8 +373,10 @@ namespace SELDLA_G
                     }
 
                 }
+
+                updateDistanceReverse(pos1.chrStart, pos1.chrEnd);
                 myphaseData = tempmyphaseData;
-                calcMatchRate1line();
+                //calcMatchRate1line();
                 setDistTexture();
             }
             if (state.IsKeyDown(Keys.T) && changing == false)
@@ -412,8 +416,10 @@ namespace SELDLA_G
                             }
                         }
                     }
+
+                    updateDistanceChange(pos1.chrStart, pos1.chrEnd, pos2.chrStart, pos2.chrEnd);
                     myphaseData = tempmyphaseData;
-                    calcMatchRate1line();
+                    //calcMatchRate1line();
                     setDistTexture();
 
                 }
@@ -454,8 +460,10 @@ namespace SELDLA_G
                     }
 
                 }
+
+                updateDistanceReverse(pos1.contigStart, pos1.contigEnd);
                 myphaseData = tempmyphaseData;
-                calcMatchRate1line();
+                //calcMatchRate1line();
                 setDistTexture();
             }
             if (state.IsKeyDown(Keys.U) && changing == false)
@@ -495,8 +503,10 @@ namespace SELDLA_G
                             }
                         }
                     }
+
+                    updateDistanceChange(pos1.contigStart, pos1.contigEnd, pos2.contigStart, pos2.contigEnd);
                     myphaseData = tempmyphaseData;
-                    calcMatchRate1line();
+                    //calcMatchRate1line();
                     setDistTexture();
 
                 }
@@ -571,8 +581,9 @@ namespace SELDLA_G
                         }
 
                     }
+                    updateDistanceReverse(markNstart[2], markNend[2]);
                     myphaseData = tempmyphaseData;
-                    calcMatchRate1line();
+                    //calcMatchRate1line();
                     setDistTexture();
                 }
             }
@@ -688,8 +699,10 @@ namespace SELDLA_G
                                 }
                             }
                         }
+
+                        updateDistanceChange(markMstart1[2], markMend1[2], markMstart2[2], markMend2[2]);
                         myphaseData = tempmyphaseData;
-                        calcMatchRate1line();
+                        //calcMatchRate1line();
                         setDistTexture();
 
                     }
@@ -991,6 +1004,152 @@ namespace SELDLA_G
             }
             accelerator2.Dispose();
             context2.Dispose();
+
+        }
+
+        void updateDistanceReverse(int areaStart, int areaEnd)
+        {
+            System.Threading.Tasks.Parallel.For(0, myphaseData.Count, j => {
+                float tempf = -1;
+                for (int i = areaStart; i <= areaStart + (areaEnd - areaStart) / 2; i++)
+                {
+                    tempf = distphase3[i, j];
+                    distphase3[i, j] = distphase3[(areaEnd - (i - areaStart)), j];
+                    distphase3[(areaEnd - (i - areaStart)), j] = tempf;
+                }
+            });
+            System.Threading.Tasks.Parallel.For(0, myphaseData.Count, j => {
+                float tempf = -1;
+                for (int i = areaStart; i <= areaStart + (areaEnd - areaStart) / 2; i++)
+                {
+                    tempf = distphase3[j, i];
+                    distphase3[j, i] = distphase3[j, (areaEnd - (i - areaStart))];
+                    distphase3[j, (areaEnd - (i - areaStart))] = tempf;
+                }
+            });
+        }
+        List<PhaseData> updatePhaseChange(int area1Start, int area1End, int area2Start, int area2End)
+        {
+            bool flag = true;
+            bool flag2 = true;
+            List<PhaseData> tempmyphaseData = new List<PhaseData>();
+            for (int i = 0; i < myphaseData.Count; i++)
+            {
+                if (!(i >= area1Start && i <= area1End) && !(i >= area2Start && i <= area2End))
+                {
+                    tempmyphaseData.Add(myphaseData[i]);
+                }
+                else if (flag == true && i >= area1Start && i <= area1End)
+                {
+                    flag = false;
+                    for (int j = 0; j < myphaseData.Count; j++)
+                    {
+                        if (j >= area2Start && j <= area2End)
+                        {
+                            tempmyphaseData.Add(myphaseData[j]);
+                        }
+                    }
+                }
+                else if (flag2 == true && i >= area2Start && i <= area2End)
+                {
+                    flag2 = false;
+                    for (int j = 0; j < myphaseData.Count; j++)
+                    {
+                        if (j >= area1Start && j <= area1End)
+                        {
+                            tempmyphaseData.Add(myphaseData[j]);
+                        }
+                    }
+                }
+            }
+            return tempmyphaseData;
+        }
+        void updateDistanceChange(int area1Start, int area1End, int area2Start, int area2End)
+        {
+            System.Threading.Tasks.Parallel.For(0, myphaseData.Count, k => {
+                float[] tempfa = new float[myphaseData.Count];
+                bool flag = true;
+                bool flag2 = true;
+                int tempindex = -1;
+                for (int i = 0; i < myphaseData.Count; i++)
+                {
+                    if (!(i >= area1Start && i <= area1End) && !(i >= area2Start && i <= area2End))
+                    {
+                        tempindex++;
+                        tempfa[tempindex] = distphase3[i, k];
+                    }
+                    else if (flag == true && i >= area1Start && i <= area1End)
+                    {
+                        flag = false;
+                        for (int j = 0; j < myphaseData.Count; j++)
+                        {
+                            if (j >= area2Start && j <= area2End)
+                            {
+                                tempindex++;
+                                tempfa[tempindex] = distphase3[j, k];
+                            }
+                        }
+                    }
+                    else if (flag2 == true && i >= area2Start && i <= area2End)
+                    {
+                        flag2 = false;
+                        for (int j = 0; j < myphaseData.Count; j++)
+                        {
+                            if (j >= area1Start && j <= area1End)
+                            {
+                                tempindex++;
+                                tempfa[tempindex] = distphase3[j, k];
+                            }
+                        }
+                    }
+                }
+                for (int i = 0; i < myphaseData.Count; i++)
+                {
+                    distphase3[i, k] = tempfa[i];
+                }
+            });
+            System.Threading.Tasks.Parallel.For(0, myphaseData.Count, k => {
+                float[] tempfa = new float[myphaseData.Count];
+                bool flag = true;
+                bool flag2 = true;
+                int tempindex = -1;
+                for (int i = 0; i < myphaseData.Count; i++)
+                {
+                    if (!(i >= area1Start && i <= area1End) && !(i >= area2Start && i <= area2End))
+                    {
+                        tempindex++;
+                        tempfa[tempindex] = distphase3[k, i];
+                    }
+                    else if (flag == true && i >= area1Start && i <= area1End)
+                    {
+                        flag = false;
+                        for (int j = 0; j < myphaseData.Count; j++)
+                        {
+                            if (j >= area2Start && j <= area2End)
+                            {
+                                tempindex++;
+                                tempfa[tempindex] = distphase3[k, j];
+                            }
+                        }
+                    }
+                    else if (flag2 == true && i >= area2Start && i <= area2End)
+                    {
+                        flag2 = false;
+                        for (int j = 0; j < myphaseData.Count; j++)
+                        {
+                            if (j >= area1Start && j <= area1End)
+                            {
+                                tempindex++;
+                                tempfa[tempindex] = distphase3[k, j];
+                            }
+                        }
+                    }
+                }
+                for (int i = 0; i < myphaseData.Count; i++)
+                {
+                    distphase3[k, i] = tempfa[i];
+                }
+            });
 
         }
         void setDistTexture()
