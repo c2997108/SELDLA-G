@@ -22,15 +22,15 @@ namespace SELDLA_G
         Texture2D whiteRectangle;
         //int[] imgData;
         Texture2D texture;
-        Texture2D texture2;
+        //Texture2D texture2;
         Texture2D texturePop;
         SKBitmap bitmap;
         SKCanvas canvas;
         SKPaint paintPop;
-        Vector2? startPosition = null;
+        /*Vector2? startPosition = null;
         Vector2? deltaPosition = null;
         int oldmouseX = 0;
-        int oldmouseY = 0;
+        int oldmouseY = 0;*/
         int worldX = 0;
         int worldY = 80;
         int inworldX = 0;
@@ -41,6 +41,8 @@ namespace SELDLA_G
         float[,] distphase3;
         int num_markers;
         List<PhaseData> myphaseData;
+        string[] myheader;
+        Dictionary<string, List<int>> myfamily = new Dictionary<string, List<int>>();
         MarkerPos pos1 = new MarkerPos();
         MarkerPos pos2 = new MarkerPos();
         bool changing = false;
@@ -72,6 +74,35 @@ namespace SELDLA_G
         {
             Regex reg = new Regex("^[^#]");
             //myphaseData  = File.ReadLines("../../../seldla2nd_chain.ld2imp.all.txt")
+
+            myheader = File.ReadLines(filename).Take(1).Select(line =>
+            {
+                var items = line.Split("\t");
+                return items;
+            }).ToArray()[0];
+            for(int i=6; i<myheader.Length; i++)
+            {
+                var items = myheader[i].Split("#");
+                if(items.Length == 2)
+                {
+                    if (!myfamily.ContainsKey(items[0]))
+                    {
+                        List <int> tempfamily = new List <int>();
+                        myfamily.Add(items[0], tempfamily);
+                    }
+                    myfamily[items[0]].Add(i-6);
+                }
+                else
+                {
+                    if (!myfamily.ContainsKey("#"))
+                    {
+                        List<int> tempfamily = new List<int>();
+                        myfamily.Add("#", tempfamily);
+                    }
+                    myfamily["#"].Add(i - 6);
+                }
+            }
+
             myphaseData = File.ReadLines(filename)
                                         .Where(c => reg.IsMatch(c))
                                         //.Take(30000)
@@ -191,6 +222,45 @@ namespace SELDLA_G
                 }
             }
         }
+        static void CalcMatchN1lineKernel(Index1D index, int j, int n_markers, int n_samples, ArrayView<int> data, ArrayView<float> output, ArrayView<float> outputN)
+        {
+            int sum1 = 0;
+            int sum2 = 0;
+            int n = 0;
+            int i = index.X;
+            for (int k = 0; k < n_samples; k++)
+            {
+                if (data[i * n_samples + k] != 0 && data[j * n_samples + k] != 0)
+                {
+                    n++;
+                    if (data[i * n_samples + k] == data[j * n_samples + k])
+                    {
+                        sum1++;
+                    }
+                    if (data[i * n_samples + k] == -data[j * n_samples + k])
+                    {
+                        sum2++;
+                    }
+                }
+            }
+            outputN[i] = n;
+            if (n == 0)
+            {
+                output[i] = 0;
+            }
+            else
+            {
+                if (sum1 > sum2)
+                {
+                    output[i] = sum1;
+                }
+                else
+                {
+                    output[i] = sum2;
+                }
+            }
+        }
+
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
@@ -283,9 +353,9 @@ namespace SELDLA_G
             inworldX = (int)((mouse.X - worldX) / worldW);
             inworldY = (int)((mouse.Y - worldY) / worldW);
             int tempX = inworldX;
-            if(tempX < 0) { tempX = 0; } else if(tempX >= myphaseData.Count){ tempX = myphaseData.Count - 1; }
+            if(tempX < 0) { tempX = 0; } else if(tempX >= num_markers){ tempX = num_markers - 1; }
             int tempY = inworldY;
-            if (tempY < 0) { tempY = 0; } else if (tempY >= myphaseData.Count) { tempY = myphaseData.Count - 1; }
+            if (tempY < 0) { tempY = 0; } else if (tempY >= num_markers) { tempY = num_markers - 1; }
             if (tempX < tempY) { int temptemp = tempY; tempY = tempX; tempX = temptemp; }
             setPosData(tempX, pos2);
             setPosData(tempY, pos1);
@@ -385,7 +455,7 @@ namespace SELDLA_G
                 if (markN == 0)
                 {
                     markN = 1;
-                    for (int i = pos1.X; i < myphaseData.Count; i++)
+                    for (int i = pos1.X; i < num_markers; i++)
                     {
                         if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { markNend[0] = i; } else { break; }
                     }
@@ -397,7 +467,7 @@ namespace SELDLA_G
                 else if(markN == 1)
                 {
                     markN = 0;
-                    for (int i = pos1.X; i < myphaseData.Count; i++)
+                    for (int i = pos1.X; i < num_markers; i++)
                     {
                         if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig){markNend[1] = i;}else{break;}
                     }
@@ -429,7 +499,7 @@ namespace SELDLA_G
                 if (markM == 0)
                 {
                     markM = 1;
-                    for (int i = pos1.X; i < myphaseData.Count; i++)
+                    for (int i = pos1.X; i < num_markers; i++)
                     {
                         if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { markMend1[0] = i; } else { break; }
                     }
@@ -441,7 +511,7 @@ namespace SELDLA_G
                 else if (markM == 1)
                 {
                     markM = 2;
-                    for (int i = pos1.X; i < myphaseData.Count; i++)
+                    for (int i = pos1.X; i < num_markers; i++)
                     {
                         if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { markMend1[1] = i; } else { break; }
                     }
@@ -464,7 +534,7 @@ namespace SELDLA_G
                 else if (markM == 2)
                 {
                     markM = 3;
-                    for (int i = pos1.X; i < myphaseData.Count; i++)
+                    for (int i = pos1.X; i < num_markers; i++)
                     {
                         if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { markMend2[0] = i; } else { break; }
                     }
@@ -476,7 +546,7 @@ namespace SELDLA_G
                 else if (markM == 3)
                 {
                     markM = 0;
-                    for (int i = pos1.X; i < myphaseData.Count; i++)
+                    for (int i = pos1.X; i < num_markers; i++)
                     {
                         if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { markMend2[1] = i; } else { break; }
                     }
@@ -521,7 +591,7 @@ namespace SELDLA_G
                 if (markN == 0)
                 {
                     markN = 1;
-                    for (int i = pos1.X; i < myphaseData.Count; i++)
+                    for (int i = pos1.X; i < num_markers; i++)
                     {
                         if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { markNend[0] = i; } else { break; }
                     }
@@ -533,7 +603,7 @@ namespace SELDLA_G
                 else if (markN == 1)
                 {
                     markN = 0;
-                    for (int i = pos1.X; i < myphaseData.Count; i++)
+                    for (int i = pos1.X; i < num_markers; i++)
                     {
                         if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { markNend[1] = i; } else { break; }
                     }
@@ -563,7 +633,7 @@ namespace SELDLA_G
                     var str = Console.ReadLine();
 
                     List<PhaseData> tempmyphaseData = new List<PhaseData>();
-                    for (int i = 0; i < myphaseData.Count; i++)
+                    for (int i = 0; i < num_markers; i++)
                     {
                         if (i >= markNstart[2] && i <= markNend[2])
                         {
@@ -581,7 +651,7 @@ namespace SELDLA_G
                 var str = Console.ReadLine();
                 if (str != "") { savefilename = str; }
 
-                string[] result = new string[myphaseData.Count];
+                string[] result = new string[num_markers];
                 for (int i = 0; i < result.Length; i++)
                 {
                     StringBuilder strb = new StringBuilder(myphaseData[i].chr2nd + "\t" + myphaseData[i].chr2nd);
@@ -656,7 +726,7 @@ namespace SELDLA_G
             {
                 int tempNstart = -1;
                 int tempNend = -1;
-                for (int i = pos1.X; i < myphaseData.Count; i++)
+                for (int i = pos1.X; i < num_markers; i++)
                 {
                     if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { tempNend = i; } else { break; }
                 }
@@ -678,7 +748,7 @@ namespace SELDLA_G
             {
                 int tempMstart1 = -1;
                 int tempMend1 = -1;
-                for (int i = pos1.X; i < myphaseData.Count; i++)
+                for (int i = pos1.X; i < num_markers; i++)
                 {
                     if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { tempMend1 = i; } else { break; }
                 }
@@ -702,7 +772,7 @@ namespace SELDLA_G
                 drawRect(_spriteBatch, whiteRectangle, markMstart1[2], markMend1[2] - markMstart1[2] + 1, Color.Red);
                 int tempMstart1 = -1;
                 int tempMend1 = -1;
-                for (int i = pos1.X; i < myphaseData.Count; i++)
+                for (int i = pos1.X; i < num_markers; i++)
                 {
                     if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig) { tempMend1 = i; } else { break; }
                 }
@@ -736,8 +806,8 @@ namespace SELDLA_G
         }
         void calcMatchRate()
         {
-            int[] phaseForGPU = new int[myphaseData.Count * myphaseData[0].dataphase.Count];
-            for (int i = 0; i < myphaseData.Count; i++)
+            int[] phaseForGPU = new int[num_markers * myphaseData[0].dataphase.Count];
+            for (int i = 0; i < num_markers; i++)
             {
                 for (int j = 0; j < myphaseData[0].dataphase.Count; j++)
                 {
@@ -748,19 +818,19 @@ namespace SELDLA_G
             Accelerator accelerator2 = context2.GetPreferredDevice(preferCPU: false).CreateAccelerator(context2);
             accelerator2.PrintInformation();
             MemoryBuffer1D<int, Stride1D.Dense> deviceData2 = accelerator2.Allocate1D(phaseForGPU);
-            MemoryBuffer1D<float, Stride1D.Dense> deviceOutput2 = accelerator2.Allocate1D<float>(myphaseData.Count * myphaseData.Count);
+            MemoryBuffer1D<float, Stride1D.Dense> deviceOutput2 = accelerator2.Allocate1D<float>(num_markers * num_markers);
             Action<Index2D, int, int, ArrayView<int>, ArrayView<float>> loadedKernel2 =
                 accelerator2.LoadAutoGroupedStreamKernel<Index2D, int, int, ArrayView<int>, ArrayView<float>>(CalcMatchRateKernel);
-            loadedKernel2(new Index2D(myphaseData.Count, myphaseData.Count), myphaseData.Count, myphaseData[0].dataphase.Count, deviceData2.View, deviceOutput2.View);
+            loadedKernel2(new Index2D(num_markers, num_markers), num_markers, myphaseData[0].dataphase.Count, deviceData2.View, deviceOutput2.View);
             accelerator2.Synchronize();
             float[] hostOutput2 = deviceOutput2.GetAsArray1D();
             Console.WriteLine(hostOutput2.Length);
-            distphase3 = new float[myphaseData.Count, myphaseData.Count];
-            for (int i = 0; i < myphaseData.Count; i++)
+            distphase3 = new float[num_markers, num_markers];
+            for (int i = 0; i < num_markers; i++)
             {
-                for (int j = 0; j < myphaseData.Count; j++)
+                for (int j = 0; j < num_markers; j++)
                 {
-                    distphase3[i, j] = hostOutput2[i * myphaseData.Count + j];
+                    distphase3[i, j] = hostOutput2[i * num_markers + j];
                 }
             }
 
@@ -777,43 +847,73 @@ namespace SELDLA_G
         }
         void calcMatchRate1line()
         {
-            int[] phaseForGPU = new int[myphaseData.Count * myphaseData[0].dataphase.Count];
-            for (int i = 0; i < myphaseData.Count; i++)
-            {
-                for (int j = 0; j < myphaseData[0].dataphase.Count; j++)
-                {
-                    phaseForGPU[i * myphaseData[0].dataphase.Count + j] = myphaseData[i].dataphase[j];
-                }
-            }
-            distphase3 = new float[myphaseData.Count, myphaseData.Count];
+            distphase3 = new float[num_markers, num_markers];
+            float[,] distphaseN = new float[num_markers, num_markers];
+            float[,] distphaseV = new float[num_markers, num_markers];
+            int[] phaseForGPU;
             using Context context2 = Context.Create(builder => builder.AllAccelerators()); //Context.Create(builder => builder.OpenCL());
             Accelerator accelerator2 = context2.GetPreferredDevice(preferCPU: false).CreateAccelerator(context2);
             accelerator2.PrintInformation();
-            MemoryBuffer1D<int, Stride1D.Dense> deviceData2 = accelerator2.Allocate1D(phaseForGPU);
-            MemoryBuffer1D<float, Stride1D.Dense> deviceOutput2 = accelerator2.Allocate1D<float>(myphaseData.Count);
-            Action<Index1D, int, int, int, ArrayView<int>, ArrayView<float>> loadedKernel2 =
-                accelerator2.LoadAutoGroupedStreamKernel<Index1D, int, int, int, ArrayView<int>, ArrayView<float>>(CalcMatchRate1lineKernel);
-            for (int j = 0; j < myphaseData.Count; j++)
+            MemoryBuffer1D<int, Stride1D.Dense> deviceData2;
+            MemoryBuffer1D<float, Stride1D.Dense> deviceOutputV = accelerator2.Allocate1D<float>(num_markers);
+            MemoryBuffer1D<float, Stride1D.Dense> deviceOutputN = accelerator2.Allocate1D<float>(num_markers);
+            Action<Index1D, int, int, int, ArrayView<int>, ArrayView<float>, ArrayView<float>> loadedKernel2 =
+                accelerator2.LoadAutoGroupedStreamKernel<Index1D, int, int, int, ArrayView<int>, ArrayView<float>, ArrayView<float>>(CalcMatchN1lineKernel);
+            int n = -1;
+            foreach (var eachfamily in myfamily.Values)
             {
-                loadedKernel2(new Index1D(myphaseData.Count), j, myphaseData.Count, myphaseData[0].dataphase.Count, deviceData2.View, deviceOutput2.View);
-                accelerator2.Synchronize();
-                float[] hostOutput2 = deviceOutput2.GetAsArray1D();
-                //Console.WriteLine(hostOutput2.Length);
-                for (int i = 0; i < myphaseData.Count; i++)
+                n++;
+                phaseForGPU = new int[num_markers * eachfamily.Count];
+                for (int i = 0; i < num_markers; i++)
                 {
-                        distphase3[i, j] = hostOutput2[i];
+                    int j = -1;
+                    foreach (var person in eachfamily)
+                    {
+                        j++;
+                        phaseForGPU[i * eachfamily.Count + j] = myphaseData[i].dataphase[person];
+                    }
+                }
+                deviceData2 = accelerator2.Allocate1D(phaseForGPU);
+
+                for (int j = 0; j < num_markers; j++)
+                {
+                    loadedKernel2(new Index1D(num_markers), j, num_markers, eachfamily.Count, deviceData2.View, deviceOutputV.View, deviceOutputN.View);
+                    accelerator2.Synchronize();
+                    float[] hostOutputV = deviceOutputV.GetAsArray1D();
+                    float[] hostOutputN = deviceOutputN.GetAsArray1D();
+                    //Console.WriteLine(hostOutput2.Length);
+                    for (int i = 0; i < num_markers; i++)
+                    {
+                        if (n == 0)
+                        {
+                            distphaseN[i, j] = hostOutputN[i];
+                            distphaseV[i, j] = hostOutputV[i];
+                        }
+                        else
+                        {
+                            distphaseN[i, j] += hostOutputN[i];
+                            distphaseV[i, j] += hostOutputV[i];
+                        }
+                    }
                 }
             }
             accelerator2.Dispose();
             context2.Dispose();
 
+            for (int j = 0; j < num_markers; j++)
+            {
+                for (int i = 0; i < num_markers; i++)
+                {
+                    distphase3[i, j] = 2 * distphaseV[i,j] / (float)distphaseN[i,j] - 1.0f;
+                }
+            }
         }
         List<PhaseData> updatePhaseReverse(int areaStart, int areaEnd)
         {
 
             bool flag = true;
             List<PhaseData> tempmyphaseData = new List<PhaseData>();
-            for (int i = 0; i < myphaseData.Count; i++)
+            for (int i = 0; i < num_markers; i++)
             {
                 if (i < areaStart || i > areaEnd)
                 {
@@ -822,7 +922,7 @@ namespace SELDLA_G
                 else if (flag == true)
                 {
                     flag = false;
-                    for (int j = myphaseData.Count - 1; j >= 0; j--)
+                    for (int j = num_markers - 1; j >= 0; j--)
                     {
                         if (j >= areaStart && j <= areaEnd)
                         {
@@ -848,7 +948,7 @@ namespace SELDLA_G
         }
         void updateDistanceReverse(int areaStart, int areaEnd)
         {
-            System.Threading.Tasks.Parallel.For(0, myphaseData.Count, j => {
+            System.Threading.Tasks.Parallel.For(0, num_markers, j => {
                 float tempf = -1;
                 for (int i = areaStart; i <= areaStart + (areaEnd - areaStart) / 2; i++)
                 {
@@ -857,7 +957,7 @@ namespace SELDLA_G
                     distphase3[(areaEnd - (i - areaStart)), j] = tempf;
                 }
             });
-            System.Threading.Tasks.Parallel.For(0, myphaseData.Count, j => {
+            System.Threading.Tasks.Parallel.For(0, num_markers, j => {
                 float tempf = -1;
                 for (int i = areaStart; i <= areaStart + (areaEnd - areaStart) / 2; i++)
                 {
@@ -872,7 +972,7 @@ namespace SELDLA_G
             bool flag = true;
             bool flag2 = true;
             List<PhaseData> tempmyphaseData = new List<PhaseData>();
-            for (int i = 0; i < myphaseData.Count; i++)
+            for (int i = 0; i < num_markers; i++)
             {
                 if (!(i >= area1Start && i <= area1End) && !(i >= area2Start && i <= area2End))
                 {
@@ -881,7 +981,7 @@ namespace SELDLA_G
                 else if (flag == true && i >= area1Start && i <= area1End)
                 {
                     flag = false;
-                    for (int j = 0; j < myphaseData.Count; j++)
+                    for (int j = 0; j < num_markers; j++)
                     {
                         if (j >= area2Start && j <= area2End)
                         {
@@ -892,7 +992,7 @@ namespace SELDLA_G
                 else if (flag2 == true && i >= area2Start && i <= area2End)
                 {
                     flag2 = false;
-                    for (int j = 0; j < myphaseData.Count; j++)
+                    for (int j = 0; j < num_markers; j++)
                     {
                         if (j >= area1Start && j <= area1End)
                         {
@@ -905,12 +1005,12 @@ namespace SELDLA_G
         }
         void updateDistanceChange(int area1Start, int area1End, int area2Start, int area2End)
         {
-            System.Threading.Tasks.Parallel.For(0, myphaseData.Count, k => {
-                float[] tempfa = new float[myphaseData.Count];
+            System.Threading.Tasks.Parallel.For(0, num_markers, k => {
+                float[] tempfa = new float[num_markers];
                 bool flag = true;
                 bool flag2 = true;
                 int tempindex = -1;
-                for (int i = 0; i < myphaseData.Count; i++)
+                for (int i = 0; i < num_markers; i++)
                 {
                     if (!(i >= area1Start && i <= area1End) && !(i >= area2Start && i <= area2End))
                     {
@@ -920,7 +1020,7 @@ namespace SELDLA_G
                     else if (flag == true && i >= area1Start && i <= area1End)
                     {
                         flag = false;
-                        for (int j = 0; j < myphaseData.Count; j++)
+                        for (int j = 0; j < num_markers; j++)
                         {
                             if (j >= area2Start && j <= area2End)
                             {
@@ -932,7 +1032,7 @@ namespace SELDLA_G
                     else if (flag2 == true && i >= area2Start && i <= area2End)
                     {
                         flag2 = false;
-                        for (int j = 0; j < myphaseData.Count; j++)
+                        for (int j = 0; j < num_markers; j++)
                         {
                             if (j >= area1Start && j <= area1End)
                             {
@@ -942,17 +1042,17 @@ namespace SELDLA_G
                         }
                     }
                 }
-                for (int i = 0; i < myphaseData.Count; i++)
+                for (int i = 0; i < num_markers; i++)
                 {
                     distphase3[i, k] = tempfa[i];
                 }
             });
-            System.Threading.Tasks.Parallel.For(0, myphaseData.Count, k => {
-                float[] tempfa = new float[myphaseData.Count];
+            System.Threading.Tasks.Parallel.For(0, num_markers, k => {
+                float[] tempfa = new float[num_markers];
                 bool flag = true;
                 bool flag2 = true;
                 int tempindex = -1;
-                for (int i = 0; i < myphaseData.Count; i++)
+                for (int i = 0; i < num_markers; i++)
                 {
                     if (!(i >= area1Start && i <= area1End) && !(i >= area2Start && i <= area2End))
                     {
@@ -962,7 +1062,7 @@ namespace SELDLA_G
                     else if (flag == true && i >= area1Start && i <= area1End)
                     {
                         flag = false;
-                        for (int j = 0; j < myphaseData.Count; j++)
+                        for (int j = 0; j < num_markers; j++)
                         {
                             if (j >= area2Start && j <= area2End)
                             {
@@ -974,7 +1074,7 @@ namespace SELDLA_G
                     else if (flag2 == true && i >= area2Start && i <= area2End)
                     {
                         flag2 = false;
-                        for (int j = 0; j < myphaseData.Count; j++)
+                        for (int j = 0; j < num_markers; j++)
                         {
                             if (j >= area1Start && j <= area1End)
                             {
@@ -984,7 +1084,7 @@ namespace SELDLA_G
                         }
                     }
                 }
-                for (int i = 0; i < myphaseData.Count; i++)
+                for (int i = 0; i < num_markers; i++)
                 {
                     distphase3[k, i] = tempfa[i];
                 }
@@ -1020,7 +1120,7 @@ namespace SELDLA_G
                     break;
                 }
             }
-            for (int i = pos1.X; i < myphaseData.Count; i++)
+            for (int i = pos1.X; i < num_markers; i++)
             {
                 if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd)
                 {
@@ -1042,7 +1142,7 @@ namespace SELDLA_G
                     break;
                 }
             }
-            for (int i = pos1.X; i < myphaseData.Count; i++)
+            for (int i = pos1.X; i < num_markers; i++)
             {
                 if (myphaseData[i].chrorig == myphaseData[pos1.X].chrorig)
                 {
