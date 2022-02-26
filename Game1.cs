@@ -55,6 +55,7 @@ namespace SELDLA_G
         int[] markMstart2 = new int[3];
         int[] markMend2 = new int[3];
         string savefilename = "savedata.txt";
+        int n_connect_length = 10000;
 
 
         public Game1()
@@ -264,6 +265,7 @@ namespace SELDLA_G
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
+            _graphics.PreferMultiSampling = false;
             _graphics.PreferredBackBufferWidth = GraphicsDevice.DisplayMode.Width;
             _graphics.PreferredBackBufferHeight = GraphicsDevice.DisplayMode.Height;
             //_graphics.PreferredBackBufferWidth = 2000;
@@ -283,9 +285,9 @@ namespace SELDLA_G
             whiteRectangle.SetData(new[] { Color.White });
 
             //openFile("savedate.txt");
-            //openFile("../../../savedate.txt");
+            openFile("../../../savedate.txt");
             //openFile("../../../seldla2nd_chain.ld2imp.all.txt");
-            openFile("../../../seldla2nd_chain.ph.all.txt");
+            //openFile("../../../seldla2nd_chain.ph.all.txt");
 
             texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
             calcMatchRate1line();
@@ -585,6 +587,15 @@ namespace SELDLA_G
                 }
             }
 
+            if (state.IsKeyDown(Keys.D) && changing == false)
+            {
+                changing = true;
+
+                updateDistanceDelete(pos1.contigStart, pos1.contigEnd);
+                myphaseData = updatePhaseDelete(pos1.contigStart, pos1.contigEnd);
+                setDistTexture();
+            }
+
             if (state.IsKeyDown(Keys.E) && changing == false)
             {
                 changing = true;
@@ -647,42 +658,8 @@ namespace SELDLA_G
             if (state.IsKeyDown(Keys.S) && changing == false)
             {
                 changing = true;
-                Console.WriteLine("Enter the name of the file you want to save. [\""+savefilename+"\"]");
-                var str = Console.ReadLine();
-                if (str != "") { savefilename = str; }
 
-                string[] result = new string[num_markers];
-                for (int i = 0; i < result.Length; i++)
-                {
-                    StringBuilder strb = new StringBuilder(myphaseData[i].chr2nd + "\t" + myphaseData[i].chr2nd);
-                    if(myphaseData[i].chrorient == "+" || myphaseData[i].chrorient == "-")
-                    {
-                        strb.Append("\t+\t" + myphaseData[i].chrorient);
-                    }
-                    else
-                    {
-                        strb.Append("\tna\t"+myphaseData[i].chrorient);
-                    }
-                    strb.Append("\t" +myphaseData[i].chrorig+"\t"+myphaseData[i].markerpos);
-                    for(int j = 0; j<myphaseData[i].dataphase.Count; j++)
-                    {
-                        if(myphaseData[i].dataphase[j] == 1)
-                        {
-                            strb.Append("\t1");
-                        }else if(myphaseData[i].dataphase[j] == -1)
-                        {
-                            strb.Append("\t0");
-                        }
-                        else
-                        {
-                            strb.Append("\t-1");
-                        }
-                    }
-                    strb.Append("\n");
-                    result[i] = strb.ToString();
-                }
-                Console.WriteLine("Saving to "+savefilename);
-                System.IO.File.WriteAllLines(savefilename, result);
+                savedata();
             }
 
             if (state.IsKeyDown(Keys.O) && changing == false)
@@ -703,6 +680,15 @@ namespace SELDLA_G
                 }
 
             }
+
+            if (state.IsKeyDown(Keys.P) && changing == false)
+            {
+                changing = true;
+
+                openseq("../../../cl0.92_sp0.90_ex0.60_split_seq.txt");
+                
+            }
+
 
             base.Update(gameTime);
         }
@@ -796,6 +782,137 @@ namespace SELDLA_G
             base.Draw(gameTime);
         }
 
+        void openseq(string file)
+        {
+            var seq = new Dictionary<string, string>();
+            File.ReadLines(file).AsParallel().ForAll(line =>
+            {
+                var arr = line.Split("\t");
+                seq.Add(arr[0], arr[1]);
+            });
+            Console.WriteLine(seq.Count);
+            
+            var extendedSeq = new Dictionary<string, StringBuilder>();
+            var extendedSeqNAexcludedChr = new Dictionary<string, StringBuilder>();
+            var strN = getNstr(n_connect_length);
+            string oldcontigname = "";
+            foreach(var phase in myphaseData)
+            {
+                if (phase.chrorig != oldcontigname)
+                {
+                    oldcontigname = phase.chrorig;
+                    if (!extendedSeq.ContainsKey(phase.chr2nd))
+                    {
+                        var tempsb = new StringBuilder();
+                        tempsb.Append(seq[phase.chrorig]);
+                        if(phase.chrorient == "+")
+                        {
+                            extendedSeq.Add(phase.chr2nd, tempsb);
+                            extendedSeqNAexcludedChr.Add(phase.chr2nd, tempsb);
+                        }
+                        else if(phase.chrorient == "-")
+                        {
+                            string revseq = getRevComp(tempsb.ToString());
+                            extendedSeq.Add(phase.chr2nd, new StringBuilder(revseq));
+                            extendedSeqNAexcludedChr.Add(phase.chr2nd, new StringBuilder(revseq));
+                        }
+                        else //"na"
+                        {
+                            extendedSeq.Add(phase.chr2nd, tempsb);
+                            extendedSeqNAexcludedChr.Add(phase.chr2nd, getNstr(tempsb.Length));
+                            extendedSeqNAexcludedChr.Add(phase.chr2nd+"_related_"+phase.chrorig, tempsb);
+                        }
+                    }
+                    else
+                    {
+                        extendedSeq[phase.chr2nd].Append(strN);
+                        if (phase.chrorient == "+")
+                        {
+                            extendedSeq[phase.chr2nd].Append(seq[phase.chrorig]);
+                            extendedSeqNAexcludedChr[phase.chr2nd].Append(seq[phase.chrorig]);
+                        }
+                        else if(phase.chrorient == "-")
+                        {
+                            string revseq = getRevComp(seq[phase.chrorig]);
+                            extendedSeq[phase.chr2nd].Append(revseq);
+                            extendedSeqNAexcludedChr[phase.chr2nd].Append(revseq);
+                        }
+                        else //"na"
+                        {
+                            extendedSeq[phase.chr2nd].Append(seq[phase.chrorig]);
+                            extendedSeqNAexcludedChr[phase.chr2nd].Append(getNstr(seq[phase.chrorig].Length));
+                            extendedSeqNAexcludedChr.Add(phase.chr2nd + "_related_" + phase.chrorig, new StringBuilder(seq[phase.chrorig]));
+                        }
+                    }
+                }
+
+            }
+            using (var fs = new System.IO.StreamWriter(savefilename+".includeNA.fasta", false))
+            {
+                foreach (var item in extendedSeq)
+                {
+                    fs.WriteLine(">"+item.Key);
+                    fs.WriteLine(item.Value);
+                }
+            }
+            using (var fs = new System.IO.StreamWriter(savefilename + ".fasta", false))
+            {
+                foreach (var item in extendedSeqNAexcludedChr)
+                {
+                    fs.WriteLine(">" + item.Key);
+                    fs.WriteLine(item.Value);
+                }
+            }
+        }
+                                        
+        void savedata()
+        {
+
+            Console.WriteLine("Enter the name of the file you want to save. [\"" + savefilename + "\"]");
+            var str = Console.ReadLine();
+            if (str != "") { savefilename = str; }
+
+            string[] result = new string[num_markers+1];
+            StringBuilder stra = new StringBuilder(myheader[0]);
+            for(int i = 1; i < myheader.Length; i++)
+            {
+                stra.Append("\t"+myheader[i]);
+            }
+            result[0]=stra.ToString();
+
+            for (int i = 0; i < result.Length-1; i++)
+            {
+                StringBuilder strb = new StringBuilder(myphaseData[i].chr2nd + "\t" + myphaseData[i].chr2nd);
+                if (myphaseData[i].chrorient == "+" || myphaseData[i].chrorient == "-")
+                {
+                    strb.Append("\t+\t" + myphaseData[i].chrorient);
+                }
+                else
+                {
+                    strb.Append("\tna\t" + myphaseData[i].chrorient);
+                }
+                strb.Append("\t" + myphaseData[i].chrorig + "\t" + myphaseData[i].markerpos);
+                for (int j = 0; j < myphaseData[i].dataphase.Count; j++)
+                {
+                    if (myphaseData[i].dataphase[j] == 1)
+                    {
+                        strb.Append("\t1");
+                    }
+                    else if (myphaseData[i].dataphase[j] == -1)
+                    {
+                        strb.Append("\t0");
+                    }
+                    else
+                    {
+                        strb.Append("\t-1");
+                    }
+                }
+                strb.Append("\n");
+                result[i+1] = strb.ToString();
+            }
+            Console.WriteLine("Saving to " + savefilename);
+            System.IO.File.WriteAllLines(savefilename, result);
+        }
         void drawRect(SpriteBatch sprite, Texture2D rect, int inworldx, int size, Color color)
         {
             sprite.Draw(rect, new Rectangle((int)(inworldx * worldW + worldX), (int)(inworldx * worldW + worldY), (int)1, (int)(size * worldW)), color);
@@ -907,6 +1024,35 @@ namespace SELDLA_G
                     distphase3[i, j] = 2 * distphaseV[i,j] / (float)distphaseN[i,j] - 1.0f;
                 }
             }
+        }
+
+        List<PhaseData> updatePhaseDelete(int areaStart, int areaEnd)
+        {
+            List<PhaseData> tempmyphaseData = new List<PhaseData>();
+            for (int i = 0; i < myphaseData.Count; i++)
+            {
+                if (i < areaStart || i > areaEnd)
+                {
+                    tempmyphaseData.Add(myphaseData[i]);
+                }
+            }
+            return tempmyphaseData;
+        }
+        void updateDistanceDelete(int areaStart, int areaEnd)
+        {
+            float[,] tempdistphase3 = new float[num_markers - (areaEnd - areaStart + 1), num_markers - (areaEnd - areaStart + 1)];
+
+            System.Threading.Tasks.Parallel.For(0, areaStart, j => {
+                for (int i = 0; i < areaStart; i++) tempdistphase3[i, j] = distphase3[i, j];
+                for (int i = areaEnd + 1; i < num_markers; i++) tempdistphase3[i - (areaEnd - areaStart + 1), j] = distphase3[i, j];
+            });
+            System.Threading.Tasks.Parallel.For(areaEnd+1, num_markers, j => {
+                for (int i = 0; i < areaStart; i++) tempdistphase3[i, j - (areaEnd - areaStart + 1)] = distphase3[i, j];
+                for (int i = areaEnd + 1; i < num_markers; i++) tempdistphase3[i - (areaEnd - areaStart + 1), j - (areaEnd - areaStart + 1)] = distphase3[i, j];
+            });
+            distphase3 = tempdistphase3;
+            num_markers = num_markers - (areaEnd - areaStart + 1);
+            texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
         }
         List<PhaseData> updatePhaseReverse(int areaStart, int areaEnd)
         {
@@ -1153,6 +1299,48 @@ namespace SELDLA_G
                     break;
                 }
             }
+        }
+
+        public static string getRevCompBp(string bp)
+        {
+            switch (bp)
+            {
+                case "A":
+                    return "T";
+                case "a":
+                    return "t";
+                case "C":
+                    return "G";
+                case "c":
+                    return "g";
+                case "G":
+                    return "C";
+                case "g":
+                    return "c";
+                case "T":
+                    return "A";
+                case "t":
+                    return "a";
+                case "n":
+                    return "n";
+                default:
+                    return "N";
+            }
+        }
+        public static string getRevComp(string seq)
+        {
+            StringBuilder sb1 = new StringBuilder();
+            for (int i = seq.Length - 1; i >= 0; i--)
+            {
+                sb1.Append(getRevCompBp(seq.Substring(i, 1)));
+            }
+            return sb1.ToString();
+        }
+        public StringBuilder getNstr(int n)
+        {
+            var strN = new StringBuilder();
+            for (int i = 0; i < n; i++) strN.Append("N");
+            return strN;
         }
     }
 }
