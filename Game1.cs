@@ -54,8 +54,12 @@ namespace SELDLA_G
         int[] markMend1 = new int[3];
         int[] markMstart2 = new int[3];
         int[] markMend2 = new int[3];
-        string savefilename = "savedata.txt";
+        string savefileprefixname = "seldlag_output";
         int n_connect_length = 10000;
+        Dictionary<string, string> seq = new Dictionary<string, string>();
+        List<ContigPos> contigPositions;
+        Dictionary<string, int> chrbpsize = new Dictionary<string, int>();
+        Dictionary<string, float> chrcmsize = new Dictionary<string, float>();
 
 
         public Game1()
@@ -146,8 +150,40 @@ namespace SELDLA_G
                                             return phase;
                                         }).ToList();
 
-
             num_markers = myphaseData.Count;
+            updatePhaseIndex();
+
+        }
+        void updatePhaseIndex()
+        {
+            for (int i = 0; i < num_markers; i++)
+            {
+                myphaseData[i].chrorigStartIndex = -1;
+            }
+            for (int i = 0; i < num_markers; i++)
+            {
+                PhaseData tempphase = myphaseData[i];
+                if (tempphase.chrorigStartIndex == -1)
+                {
+                    tempphase.chrorigStartIndex = i;
+                    for (int j = i + 1; j < num_markers; j++)
+                    {
+                        if (tempphase.chrorig == myphaseData[j].chrorig)
+                        {
+                            tempphase.chrorigEndIndex = j;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    for (int j = i + 1; j <= tempphase.chrorigEndIndex; j++)
+                    {
+                        myphaseData[j].chrorigStartIndex = i;
+                        myphaseData[j].chrorigEndIndex = tempphase.chrorigEndIndex;
+                    }
+                }
+            }
         }
         static void CalcMatchRateKernel(Index2D index, int n_markers, int n_samples, ArrayView<int> data, ArrayView<float> output)
         {
@@ -324,15 +360,15 @@ namespace SELDLA_G
                 canvas.DrawCircle(w / 2, h / 2, w / 4, paint);
 */
             paintPop = new SKPaint();
-                paintPop.TextSize = 25;
-                paintPop.Color = SKColors.Black;
-                //canvas.DrawText("test",10,50, paintPop);
-                // 描画コマンド実行
-                canvas.Flush();
+            paintPop.TextSize = 25;
+            paintPop.Color = SKColors.Black;
+            //canvas.DrawText("test",10,50, paintPop);
+            // 描画コマンド実行
+            canvas.Flush();
 
-                // SKBitmapをTexture2Dに変換
-                texturePop = new Texture2D(GraphicsDevice, bitmap.Width, bitmap.Height, mipmap: false, format: SurfaceFormat.Color);
-                texturePop.SetData(bitmap.Bytes);
+            // SKBitmapをTexture2Dに変換
+            texturePop = new Texture2D(GraphicsDevice, bitmap.Width, bitmap.Height, mipmap: false, format: SurfaceFormat.Color);
+            texturePop.SetData(bitmap.Bytes);
             
         }
 
@@ -415,6 +451,7 @@ namespace SELDLA_G
 
                 updateDistanceReverse(pos1.chrStart, pos1.chrEnd);
                 myphaseData = updatePhaseReverse(pos1.chrStart, pos1.chrEnd);
+                updatePhaseIndex();
                 //calcMatchRate1line();
                 setDistTexture();
             }
@@ -425,6 +462,7 @@ namespace SELDLA_G
                 {
                     updateDistanceChange(pos1.chrStart, pos1.chrEnd, pos2.chrStart, pos2.chrEnd);
                     myphaseData = updatePhaseChange(pos1.chrStart, pos1.chrEnd, pos2.chrStart, pos2.chrEnd);
+                    updatePhaseIndex();
                     //calcMatchRate1line();
                     setDistTexture();
 
@@ -436,6 +474,7 @@ namespace SELDLA_G
 
                 updateDistanceReverse(pos1.contigStart, pos1.contigEnd);
                 myphaseData = updatePhaseReverse(pos1.contigStart, pos1.contigEnd);
+                updatePhaseIndex();
                 //calcMatchRate1line();
                 setDistTexture();
             }
@@ -446,6 +485,7 @@ namespace SELDLA_G
                 {
                     updateDistanceChange(pos1.contigStart, pos1.contigEnd, pos2.contigStart, pos2.contigEnd);
                     myphaseData = updatePhaseChange(pos1.contigStart, pos1.contigEnd, pos2.contigStart, pos2.contigEnd);
+                    updatePhaseIndex();
                     //calcMatchRate1line();
                     setDistTexture();
 
@@ -490,6 +530,7 @@ namespace SELDLA_G
 
                     updateDistanceReverse(markNstart[2], markNend[2]);
                     myphaseData = updatePhaseReverse(markNstart[2], markNend[2]);
+                    updatePhaseIndex();
                     //calcMatchRate1line();
                     setDistTexture();
                 }
@@ -576,6 +617,7 @@ namespace SELDLA_G
                     {
                         updateDistanceChange(markMstart1[2], markMend1[2], markMstart2[2], markMend2[2]);
                         myphaseData = updatePhaseChange(markMstart1[2], markMend1[2], markMstart2[2], markMend2[2]);
+                        updatePhaseIndex();
                         //calcMatchRate1line();
                         setDistTexture();
 
@@ -593,6 +635,7 @@ namespace SELDLA_G
 
                 updateDistanceDelete(pos1.contigStart, pos1.contigEnd);
                 myphaseData = updatePhaseDelete(pos1.contigStart, pos1.contigEnd);
+                updatePhaseIndex();
                 setDistTexture();
             }
 
@@ -685,7 +728,12 @@ namespace SELDLA_G
             {
                 changing = true;
 
-                openseq("../../../cl0.92_sp0.90_ex0.60_split_seq.txt");
+                string file = "../../../cl0.92_sp0.90_ex0.60_split_seq.txt";
+                Console.WriteLine("Enter the FASTA file name. [\"" + file + "\"]");
+                var str = Console.ReadLine();
+                if (str != "") { file = str; }
+
+                openseq(file);
                 
             }
 
@@ -784,7 +832,8 @@ namespace SELDLA_G
 
         void openseq(string file)
         {
-            var seq = new Dictionary<string, string>();
+            contigPositions = new List<ContigPos>();
+            seq = new Dictionary<string, string>();
             File.ReadLines(file).AsParallel().ForAll(line =>
             {
                 var arr = line.Split("\t");
@@ -796,10 +845,78 @@ namespace SELDLA_G
             var extendedSeqNAexcludedChr = new Dictionary<string, StringBuilder>();
             var strN = getNstr(n_connect_length);
             string oldcontigname = "";
-            foreach(var phase in myphaseData)
+            int notNAEndindex = -1;
+            List<string> flagIsUsedContig = new List<string>();
+            int length_orient = 0;
+            int length_locate = 0;
+            int length_all = 0;
+            int n_orient = 0;
+            int n_locate = 0;
+            int n_all = 0;
+            foreach (var phase in myphaseData)
             {
                 if (phase.chrorig != oldcontigname)
                 {
+                    //集計用情報取得
+                    flagIsUsedContig.Add(phase.chrorig);
+                    n_all++;
+                    length_all += seq[phase.chrorig].Length;
+                    n_locate++;
+                    length_locate += seq[phase.chrorig].Length;
+                    if (phase.chrorient != "na")
+                    {
+                        n_orient++;
+                        length_orient += seq[phase.chrorig].Length;
+                    }
+
+                    //chainファイル用データ作成
+                    ContigPos tempcpos = new ContigPos { chrname = phase.chr2nd, contigname = phase.chrorig, orientation = phase.chrorient};
+                    ContigPos oldcpos = null;
+                    if(contigPositions.Count>0) oldcpos = contigPositions[contigPositions.Count - 1];
+                    if(oldcpos != null && oldcpos.chrname == tempcpos.chrname)
+                    {
+                        tempcpos.start_bp = oldcpos.end_bp + n_connect_length + 1;
+                        if(phase.chrorient == "na")
+                        {
+                            tempcpos.start_cm = oldcpos.end_cm;
+                        }
+                        else if(notNAEndindex != -1)
+                        {
+                            tempcpos.start_cm = oldcpos.end_cm + 100 * (1 - (distphase3[notNAEndindex, phase.chrorigStartIndex] + 1) / 2);
+                        }
+                        else //notNAEndindex == -1
+                        {
+                            tempcpos.start_cm = oldcpos.end_cm;
+                        }
+                    }
+                    else
+                    {
+                        tempcpos.start_bp = 0;
+                        tempcpos.start_cm = 0;
+                    }
+                    tempcpos.end_bp = tempcpos.start_bp + seq[phase.chrorig].Length - 1;
+                    if(phase.chrorient == "na")
+                    {
+                        tempcpos.end_cm = tempcpos.start_cm;
+                    }
+                    else
+                    {
+                        tempcpos.end_cm = tempcpos.start_cm + 100 * (1 - (distphase3[phase.chrorigStartIndex, phase.chrorigEndIndex] + 1) / 2);
+                        notNAEndindex = phase.chrorigEndIndex;
+                    }
+                    contigPositions.Add(tempcpos);
+                    if (chrbpsize.ContainsKey(tempcpos.chrname))
+                    {
+                        chrbpsize[tempcpos.chrname] = tempcpos.end_bp;
+                        chrcmsize[tempcpos.chrname] = tempcpos.end_cm;
+                    }
+                    else
+                    {
+                        chrbpsize.Add(tempcpos.chrname, tempcpos.end_bp);
+                        chrcmsize.Add(tempcpos.chrname, tempcpos.end_cm);
+                    }
+
+                    //FASTAファイル作成
                     oldcontigname = phase.chrorig;
                     if (!extendedSeq.ContainsKey(phase.chr2nd))
                     {
@@ -847,31 +964,235 @@ namespace SELDLA_G
                 }
 
             }
-            using (var fs = new System.IO.StreamWriter(savefilename+".includeNA.fasta", false))
+            using (var fs = new System.IO.StreamWriter(savefileprefixname + ".stats", false))
+            {
+                seq.Keys.Where(x => !flagIsUsedContig.Contains(x)).ToList().ForEach(x =>
+                {
+                    n_all++;
+                    length_all+=seq[x].Length;
+                });
+                Console.WriteLine("Total: " + n_all + " contigs, " + length_all + " bases");
+                Console.WriteLine("Located: " + n_locate + " contigs, " + length_locate + " bases (" + (length_locate / (double)length_all*100) + "%)");
+                Console.WriteLine("Oriented: " + n_orient + " contigs, " + length_orient + " bases (" + (length_orient / (double)length_all*100) + "%)");
+                fs.WriteLine("Total: " + n_all + " contigs, " + length_all + " bases");
+                fs.WriteLine("Located: " + n_locate + " contigs, " + length_locate + " bases (" + (length_locate / (double)length_all*100) + "%)");
+                fs.WriteLine("Oriented: " + n_orient + " contigs, " + length_orient + " bases (" + (length_orient / (double)length_all*100) + "%)");
+            }
+            using (var fs = new System.IO.StreamWriter(savefileprefixname+".includeNA.fasta", false))
             {
                 foreach (var item in extendedSeq)
                 {
                     fs.WriteLine(">"+item.Key);
                     fs.WriteLine(item.Value);
                 }
+                seq.Keys.Where(x => !flagIsUsedContig.Contains(x)).ToList().ForEach(x =>
+                {
+                    fs.WriteLine(">" + x);
+                    fs.WriteLine(seq[x]);
+                });
             }
-            using (var fs = new System.IO.StreamWriter(savefilename + ".fasta", false))
+            using (var fs = new System.IO.StreamWriter(savefileprefixname + ".fasta", false))
             {
                 foreach (var item in extendedSeqNAexcludedChr)
                 {
                     fs.WriteLine(">" + item.Key);
                     fs.WriteLine(item.Value);
                 }
+                seq.Keys.Where(x => !flagIsUsedContig.Contains(x)).ToList().ForEach(x =>
+                {
+                    fs.WriteLine(">" + x);
+                    fs.WriteLine(seq[x]);
+                });
+            }
+            using (var fs = new System.IO.StreamWriter(savefileprefixname + ".chain", false))
+            {
+                foreach (var item in contigPositions)
+                {
+                    fs.WriteLine(item.chrname + "\t" + item.contigname + "\t" + item.orientation + "\t" + item.start_bp + "\t" + item.end_bp + "\t" + item.start_cm + "\t" + item.end_cm);
+                }
+            }
+
+            drawGraph();
+        }
+
+        void drawGraph()
+        {
+            try
+            {
+                Console.WriteLine("Drawing genetical and phisycal map...");
+                int per_width = 250;
+                int per_height = 1000;
+                int all_per_num = 8;
+                List<string> chrs = chrbpsize.Keys.ToList();
+                chrs.Sort((a, b) => chrbpsize[b].CompareTo(chrbpsize[a]));
+                int num_big_ls = chrs.Count();
+                int maxbp = chrbpsize.Max(x=>x.Value);
+                float maxcm = chrcmsize.Max(x=>x.Value);
+
+                var imageall = new SKBitmap(per_width * all_per_num, per_height * ((num_big_ls - 1) / all_per_num + 1));
+                SKCanvas canvas = new SKCanvas(imageall);
+                canvas.Clear();
+                
+                for (int i = 1; i <= num_big_ls; i++)
+                {
+                    int j = (i - 1) % all_per_num + 1;
+                    int k = (i - 1) / all_per_num + 1;
+                    drawChrBase(canvas, maxbp, maxcm, 1, i, chrbpsize[chrs[i-1]], chrcmsize[chrs[i-1]], (j - 1) * per_width, (k - 1) * per_height);
+                    contigPositions.Where(x => x.chrname == chrs[i - 1]).ToList().ForEach(x => drawBpCm(canvas, 1, x, maxbp, maxcm, (j - 1) * per_width, (k - 1) * per_height));
+                    drawChrFin(canvas, maxbp, maxcm, 1, i, chrbpsize[chrs[i - 1]], chrcmsize[chrs[i - 1]], (j - 1) * per_width, (k - 1) * per_height, chrs[i-1]);
+                }
+                var image = SKImage.FromBitmap(imageall);
+
+                using (var stream = File.Create(savefileprefixname+".png"))
+                {
+                    var data = image.Encode(SKEncodedImageFormat.Png, 100);
+                    data.SaveTo(stream);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
             }
         }
-                                        
+
+        public void drawChrBase(SKCanvas canvas, long maxbp, double maxcm, int fold, int num_ls, long each_maxbp, double each_maxcm, int startx, int starty)
+        {
+            var paint = new SKPaint
+            {
+                Style = SKPaintStyle.Fill,
+                Color = SKColors.White
+            };
+            canvas.DrawRect(startx, starty, 250 * fold, 1000 * fold, paint);
+            var pen = new SKPaint
+            {
+                Color = SKColors.Gray
+            };
+            canvas.DrawLine(startx + 175 * fold, starty + 50 * fold, startx + 175 * fold, starty + (50 + 900 * (float)(each_maxcm / maxcm)) * fold, pen);
+        }
+
+        void drawBpCm(SKCanvas canvas, int fold, ContigPos contig, long maxbp, double maxcm, int startx, int starty)
+        {
+            var pen = new SKPaint
+            {
+                Color = SKColors.Gray
+            };
+            var brush = new SKPaint
+            {
+                Style = SKPaintStyle.Fill,
+                Color = SKColors.LightGray
+            };
+            canvas.DrawLine(startx + 75 * fold, starty + (50 + 900 * ((float)contig.start_bp / maxbp)) * fold, startx + 175 * fold, starty + (50 + 900 * (float)(contig.start_cm / maxcm)) * fold, pen);
+            canvas.DrawLine(startx + 75 * fold, starty + (50 + 900 * ((float)contig.end_bp / maxbp)) * fold, startx + 175 * fold, starty + (50 + 900 * (float)(contig.end_cm / maxcm)) * fold, pen);
+            if (contig.orientation == "na")
+            {
+                pen.Color= SKColors.Blue;
+                brush.Color= SKColors.White;
+            }
+            else
+            {
+                pen.Color = SKColors.Red;
+                brush.Color = SKColors.LightGray;
+            }
+            canvas.DrawRect(startx + 26 * fold, starty + (50 + 900 * ((float)contig.start_bp / maxbp)) * fold, 48 * fold, 900 * (contig.end_bp - contig.start_bp) / (float)maxbp * fold, brush);
+            canvas.DrawLine(startx + 175 * fold, starty + (50 + 900 * (float)(contig.start_cm / maxcm)) * fold, startx + 175 * fold, starty + (50 + 900 * (float)(contig.end_cm / maxcm)) * fold, pen);
+            pen.Color = SKColors.Black;
+            canvas.DrawLine(startx + 165 * fold, starty + (50 + 900 * (float)(contig.start_cm / maxcm)) * fold, startx + 185 * fold, starty + (50 + 900 * (float)(contig.start_cm / maxcm)) * fold, pen);
+            canvas.DrawLine(startx + 165 * fold, starty + (50 + 900 * (float)(contig.end_cm / maxcm)) * fold, startx + 185 * fold, starty + (50 + 900 * (float)(contig.end_cm / maxcm)) * fold, pen);
+        }
+        public void drawChrFin(SKCanvas canvas, long maxbp, double maxcm, int fold, int num_ls, long each_maxbp, double each_maxcm, int startx, int starty, string chrname)
+        {
+            float y0 = 50;
+            float y1 = 50 + 900 * each_maxbp / maxbp;
+            var brush = new SKPaint
+            {
+                Style = SKPaintStyle.Fill,
+                Color = SKColors.White
+            };
+            var pen = new SKPaint
+            {
+                Style = SKPaintStyle.Stroke,
+                Color = SKColors.Black
+            };
+
+            var path = new SKPath { FillType = SKPathFillType.EvenOdd };
+            path.MoveTo(startx + 25 * fold, starty + (float)(y0 - 5) * fold);
+            path.LineTo(startx + 25 * fold, starty + (float)(y0 + 7.5 - 0) * fold);
+            path.LineTo(startx + 30 * fold, starty + (float)(y0 + 7.5 - 3) * fold);
+            path.LineTo(startx + 35 * fold, starty + (float)(y0 + 7.5 - 5.5) * fold);
+            path.LineTo(startx + 40 * fold, starty + (float)(y0 + 7.5 - 6.5) * fold);
+            path.LineTo(startx + 45 * fold, starty + (float)(y0 + 7.5 - 7) * fold);
+            path.LineTo(startx + 50 * fold, starty + (float)(y0 + 7.5 - 7.5) * fold);
+            path.LineTo(startx + 55 * fold, starty + (float)(y0 + 7.5 - 7) * fold);
+            path.LineTo(startx + 60 * fold, starty + (float)(y0 + 7.5 - 6.5) * fold);
+            path.LineTo(startx + 65 * fold, starty + (float)(y0 + 7.5 - 5.5) * fold);
+            path.LineTo(startx + 70 * fold, starty + (float)(y0 + 7.5 - 3) * fold);
+            path.LineTo(startx + 75 * fold, starty + (float)(y0 + 7.5 - 0) * fold);
+            path.LineTo(startx + 75 * fold, starty + (float)(y0 - 5) * fold);
+            path.Close();
+            canvas.DrawPath(path, brush);
+
+            path = new SKPath { FillType = SKPathFillType.EvenOdd };
+            path.MoveTo(startx + 75 * fold, starty + (float)(y1 + 5) * fold);
+            path.LineTo(startx + 75 * fold, starty + (float)(y1 - 7.5 + 0) * fold);
+            path.LineTo(startx + 70 * fold, starty + (float)(y1 - 7.5 + 3) * fold);
+            path.LineTo(startx + 65 * fold, starty + (float)(y1 - 7.5 + 5.5) * fold);
+            path.LineTo(startx + 60 * fold, starty + (float)(y1 - 7.5 + 6.5) * fold);
+            path.LineTo(startx + 55 * fold, starty + (float)(y1 - 7.5 + 7) * fold);
+            path.LineTo(startx + 50 * fold, starty + (float)(y1 - 7.5 + 7.5) * fold);
+            path.LineTo(startx + 45 * fold, starty + (float)(y1 - 7.5 + 7) * fold);
+            path.LineTo(startx + 40 * fold, starty + (float)(y1 - 7.5 + 6.5) * fold);
+            path.LineTo(startx + 35 * fold, starty + (float)(y1 - 7.5 + 5.5) * fold);
+            path.LineTo(startx + 30 * fold, starty + (float)(y1 - 7.5 + 3) * fold);
+            path.LineTo(startx + 25 * fold, starty + (float)(y1 - 7.5 + 0) * fold);
+            path.LineTo(startx + 25 * fold, starty + (float)(y1 + 5) * fold);
+            path.Close();
+            canvas.DrawPath(path, brush);
+
+            path = new SKPath { };
+            path.MoveTo(startx + 25 * fold, starty + (float)(y0 + 7.5 - 0) * fold);
+            path.LineTo(startx + 30 * fold, starty + (float)(y0 + 7.5 - 3) * fold);
+            path.LineTo(startx + 35 * fold, starty + (float)(y0 + 7.5 - 5.5) * fold);
+            path.LineTo(startx + 40 * fold, starty + (float)(y0 + 7.5 - 6.5) * fold);
+            path.LineTo(startx + 45 * fold, starty + (float)(y0 + 7.5 - 7) * fold);
+            path.LineTo(startx + 50 * fold, starty + (float)(y0 + 7.5 - 7.5) * fold);
+            path.LineTo(startx + 55 * fold, starty + (float)(y0 + 7.5 - 7) * fold);
+            path.LineTo(startx + 60 * fold, starty + (float)(y0 + 7.5 - 6.5) * fold);
+            path.LineTo(startx + 65 * fold, starty + (float)(y0 + 7.5 - 5.5) * fold);
+            path.LineTo(startx + 70 * fold, starty + (float)(y0 + 7.5 - 3) * fold);
+            path.LineTo(startx + 75 * fold, starty + (float)(y0 + 7.5 - 0) * fold);
+
+            path.LineTo(startx + 75 * fold, starty + (float)(y1 - 7.5 + 0) * fold);
+            path.LineTo(startx + 70 * fold, starty + (float)(y1 - 7.5 + 3) * fold);
+            path.LineTo(startx + 65 * fold, starty + (float)(y1 - 7.5 + 5.5) * fold);
+            path.LineTo(startx + 60 * fold, starty + (float)(y1 - 7.5 + 6.5) * fold);
+            path.LineTo(startx + 55 * fold, starty + (float)(y1 - 7.5 + 7) * fold);
+            path.LineTo(startx + 50 * fold, starty + (float)(y1 - 7.5 + 7.5) * fold);
+            path.LineTo(startx + 45 * fold, starty + (float)(y1 - 7.5 + 7) * fold);
+            path.LineTo(startx + 40 * fold, starty + (float)(y1 - 7.5 + 6.5) * fold);
+            path.LineTo(startx + 35 * fold, starty + (float)(y1 - 7.5 + 5.5) * fold);
+            path.LineTo(startx + 30 * fold, starty + (float)(y1 - 7.5 + 3) * fold);
+            path.LineTo(startx + 25 * fold, starty + (float)(y1 - 7.5 + 0) * fold);
+
+            path.LineTo(startx + 25 * fold, starty + (float)(y0 + 7.5 - 0) * fold);
+            canvas.DrawPath(path, pen);
+
+            var font = new SKPaint { TextSize = 15 * fold, Color = SKColors.Black };
+            canvas.DrawText(chrname, startx + 50 * fold, starty + 15 * fold, font);
+            canvas.DrawText("0 bp", startx + 5 * fold, starty + 35 * fold, font);
+            canvas.DrawText("0 cM", startx + 155 * fold, starty + 35 * fold, font);
+            canvas.DrawText(each_maxbp.ToString("N0") + " bp", startx + 5 * fold, starty + (70 + 900 * (float)each_maxbp / maxbp) * fold, font);
+            canvas.DrawText(each_maxcm.ToString("F1") + " cM", startx + 155 * fold, starty + (70 + 900 * (float)(each_maxcm / maxcm)) * fold, font);
+            
+        }
+
         void savedata()
         {
 
-            Console.WriteLine("Enter the name of the file you want to save. [\"" + savefilename + "\"]");
+            Console.WriteLine("Enter the name of the file you want to save. [\"" + savefileprefixname + "\"]");
             var str = Console.ReadLine();
-            if (str != "") { savefilename = str; }
+            if (str != "") { savefileprefixname = str; }
 
+            texture.SaveAsPng(File.Create(savefileprefixname + ".contactmap.png"), num_markers, num_markers);
             string[] result = new string[num_markers+1];
             StringBuilder stra = new StringBuilder(myheader[0]);
             for(int i = 1; i < myheader.Length; i++)
@@ -910,8 +1231,8 @@ namespace SELDLA_G
                 strb.Append("\n");
                 result[i+1] = strb.ToString();
             }
-            Console.WriteLine("Saving to " + savefilename);
-            System.IO.File.WriteAllLines(savefilename, result);
+            Console.WriteLine("Saving to " + savefileprefixname+ ".phase.txt");
+            System.IO.File.WriteAllLines(savefileprefixname+".phase.txt", result);
         }
         void drawRect(SpriteBatch sprite, Texture2D rect, int inworldx, int size, Color color)
         {
