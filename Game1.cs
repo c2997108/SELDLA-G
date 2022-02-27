@@ -156,17 +156,17 @@ namespace SELDLA_G
         }
         void updatePhaseIndex()
         {
-            for (int i = 0; i < num_markers; i++)
+            for (int i = 0; i < myphaseData.Count; i++)
             {
                 myphaseData[i].chrorigStartIndex = -1;
             }
-            for (int i = 0; i < num_markers; i++)
+            for (int i = 0; i < myphaseData.Count; i++)
             {
                 PhaseData tempphase = myphaseData[i];
                 if (tempphase.chrorigStartIndex == -1)
                 {
                     tempphase.chrorigStartIndex = i;
-                    for (int j = i + 1; j < num_markers; j++)
+                    for (int j = i + 1; j < myphaseData.Count; j++)
                     {
                         if (tempphase.chrorig == myphaseData[j].chrorig)
                         {
@@ -321,9 +321,9 @@ namespace SELDLA_G
             whiteRectangle.SetData(new[] { Color.White });
 
             //openFile("savedate.txt");
-            openFile("../../../savedate.txt");
+            //openFile("../../../savedate.txt");
             //openFile("../../../seldla2nd_chain.ld2imp.all.txt");
-            //openFile("../../../seldla2nd_chain.ph.all.txt");
+            openFile("../../../seldla2nd_chain.ph.all.txt");
 
             texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
             calcMatchRate1line();
@@ -833,12 +833,13 @@ namespace SELDLA_G
         void openseq(string file)
         {
             contigPositions = new List<ContigPos>();
-            seq = new Dictionary<string, string>();
-            File.ReadLines(file).AsParallel().ForAll(line =>
+            seq = File.ReadLines(file).AsParallel().ToDictionary(x => x.Split("\t")[0], x=>x.Split("\t")[1]);
+/*            seq = new Dictionary<string, string>();
+            File.ReadLines(file).AsParallel().AsOrdered().ForAll(line =>
             {
                 var arr = line.Split("\t");
                 seq.Add(arr[0], arr[1]);
-            });
+            });*/
             Console.WriteLine(seq.Count);
             
             var extendedSeq = new Dictionary<string, StringBuilder>();
