@@ -55,6 +55,12 @@ namespace SELDLA_G
         List<ContigPos> contigPositions;
         Dictionary<string, int> chrbpsize = new Dictionary<string, int>();
         Dictionary<string, float> chrcmsize = new Dictionary<string, float>();
+        string fileSeq = "demo_shiitake_sequence.txt";
+        //string fileSeq = "../../../cl0.92_sp0.90_ex0.60_split_seq.txt";
+        string filePhase = "demo_shiitake_phase.txt";
+        //string filePhase = "../../../savedate.txt";
+        //string filePhase = "../../../seldla2nd_chain.ld2imp.all.txt";
+        //string filePhase = "../../../seldla2nd_chain.ph.all.txt";
 
 
         public Game1()
@@ -392,10 +398,7 @@ namespace SELDLA_G
             whiteRectangle = new Texture2D(GraphicsDevice, 1, 1);
             whiteRectangle.SetData(new[] { Color.White });
 
-            //openFile("savedate.txt");
-            openFile("../../../savedate.txt");
-            //openFile("../../../seldla2nd_chain.ld2imp.all.txt");
-            //openFile("../../../seldla2nd_chain.ph.all.txt");
+            openFile(filePhase);
 
             texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
             calcMatchRate1line();
@@ -780,11 +783,12 @@ namespace SELDLA_G
             if (state.IsKeyDown(Keys.O) && changing == false)
             {
                 changing = true;
-                Console.WriteLine("Enter the name of the file you want to open. [\"../../../savedata.txt\"]");
+                Console.WriteLine("Enter the name of the file you want to open. [\""+filePhase+ "\"]");
                 var str = Console.ReadLine();
+                if (str != "") { filePhase = str; }
                 try
                 {
-                    openFile(str);
+                    openFile(filePhase);
                     texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
                     calcMatchRate1line();
                     setDistTexture();
@@ -800,13 +804,12 @@ namespace SELDLA_G
             {
                 changing = true;
 
-                string file = "../../../cl0.92_sp0.90_ex0.60_split_seq.txt";
                 Console.WriteLine("Output the chromosome FASTA file as \"" + savefileprefixname + ".fasta\"");
-                Console.WriteLine("Enter the contig FASTA file name. [\"" + file + "\"]");
+                Console.WriteLine("Enter the contig FASTA file name. [\"" + fileSeq + "\"]");
                 var str = Console.ReadLine();
-                if (str != "") { file = str; }
+                if (str != "") { fileSeq = str; }
 
-                openseq(file);
+                openseq(fileSeq);
                 
             }
 
