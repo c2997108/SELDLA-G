@@ -61,6 +61,7 @@ namespace SELDLA_G
         //string filePhase = "../../../savedate.txt";
         //string filePhase = "../../../seldla2nd_chain.ld2imp.all.txt";
         //string filePhase = "../../../seldla2nd_chain.ph.all.txt";
+        int[,] countmatrix;
 
 
         public Game2()
@@ -69,10 +70,6 @@ namespace SELDLA_G
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
 
-            File.ReadAllLines("test").ToList().ForEach(line =>
-            {
-
-            });
         }
 
         void openFile(string filename)
@@ -185,200 +182,6 @@ namespace SELDLA_G
                 }
             }
         }
-        /*static void CalcMatchRateKernel(Index2D index, int n_markers, int n_samples, ArrayView<int> data, ArrayView<float> output)
-        {
-            int sum1 = 0;
-            int sum2 = 0;
-            int n = 0;
-            int i = index.X;
-            int j = index.Y;
-            for (int k = 0; k < n_samples; k++)
-            {
-                if (data[i * n_samples + k] != 0 && data[j * n_samples + k] != 0)
-                {
-                    n++;
-                    if (data[i * n_samples + k] == data[j * n_samples + k])
-                    {
-                        sum1++;
-                    }
-                    if (data[i * n_samples + k] == -data[j * n_samples + k])
-                    {
-                        sum2++;
-                    }
-                }
-            }
-            if (n == 0) { 
-                output[i * n_markers + j] = 0;
-            }
-            else
-            {
-                if (sum1 > sum2)
-                {
-                    output[i * n_markers + j] = 2 * sum1/(float)n - 1.0f;
-                }
-                else
-                {
-                    output[i * n_markers + j] = 2 * sum2/(float)n - 1.0f;
-                }
-            }
-        }
-        static void CalcMatchRate1lineKernel(Index1D index, int j, int n_markers, int n_samples, ArrayView<int> data, ArrayView<float> output)
-        {
-            int sum1 = 0;
-            int sum2 = 0;
-            int n = 0;
-            int i = index.X;
-            for (int k = 0; k < n_samples; k++)
-            {
-                if (data[i * n_samples + k] != 0 && data[j * n_samples + k] != 0)
-                {
-                    n++;
-                    if (data[i * n_samples + k] == data[j * n_samples + k])
-                    {
-                        sum1++;
-                    }
-                    if (data[i * n_samples + k] == -data[j * n_samples + k])
-                    {
-                        sum2++;
-                    }
-                }
-            }
-            if (n == 0)
-            {
-                output[i] = 0;
-            }
-            else
-            {
-                if (sum1 > sum2)
-                {
-                    output[i] = 2 * sum1 / (float)n - 1.0f;
-                }
-                else
-                {
-                    output[i] = 2 * sum2 / (float)n - 1.0f;
-                }
-            }
-        }*/
-        static void CalcMatchN1lineKernel(Index1D index, int startIndex, int endIndex, int n_markers, int n_samples, ArrayView<int> data, ArrayView<float> output, ArrayView<float> outputN)
-        {
-            int i = index.X;
-            for (int j = startIndex; j <= endIndex; j++)
-            {
-                int sum1 = 0;
-                int sum2 = 0;
-                int n = 0;
-                for (int k = 0; k < n_samples; k++)
-                {
-                    if (data[i * n_samples + k] != 0 && data[j * n_samples + k] != 0)
-                    {
-                        n++;
-                        if (data[i * n_samples + k] == data[j * n_samples + k])
-                        {
-                            sum1++;
-                        }
-                        if (data[i * n_samples + k] == -data[j * n_samples + k])
-                        {
-                            sum2++;
-                        }
-                    }
-                }
-                outputN[i + (j - startIndex) * n_markers] = n;
-                if (n == 0)
-                {
-                    output[i + (j - startIndex) * n_markers] = 0;
-                }
-                else
-                {
-                    if (sum1 > sum2)
-                    {
-                        output[i + (j - startIndex) * n_markers] = sum1;
-                    }
-                    else
-                    {
-                        output[i + (j - startIndex) * n_markers] = sum2;
-                    }
-                }
-            }
-        }
-        void calcMatchRate1line()
-        {
-            int num_rows = 0;
-            for (int i = 0; i < num_markers; i++)
-            {
-                num_rows++;
-                if (num_markers * (i + 1) > maxItemsSize) break;
-            }
-            distphase3 = new float[num_markers, num_markers];
-            float[,] distphaseN = new float[num_markers, num_markers];
-            float[,] distphaseV = new float[num_markers, num_markers];
-            int[] phaseForGPU;
-            using Context context2 = Context.Create(builder => builder.AllAccelerators()); //Context.Create(builder => builder.OpenCL());
-            Accelerator accelerator2 = context2.GetPreferredDevice(preferCPU: false).CreateAccelerator(context2);
-            accelerator2.PrintInformation();
-            MemoryBuffer1D<int, Stride1D.Dense> deviceData2;
-            MemoryBuffer1D<float, Stride1D.Dense> deviceOutputV = accelerator2.Allocate1D<float>(num_markers * num_rows);
-            MemoryBuffer1D<float, Stride1D.Dense> deviceOutputN = accelerator2.Allocate1D<float>(num_markers * num_rows);
-            Action<Index1D, int, int, int, int, ArrayView<int>, ArrayView<float>, ArrayView<float>> loadedKernel2 =
-                accelerator2.LoadAutoGroupedStreamKernel<Index1D, int, int, int, int, ArrayView<int>, ArrayView<float>, ArrayView<float>>(CalcMatchN1lineKernel);
-            int n = -1;
-            foreach (var eachfamily in myfamily.Values)
-            {
-                n++;
-                //Console.WriteLine(n);
-                phaseForGPU = new int[num_markers * eachfamily.Count];
-                for (int i = 0; i < num_markers; i++)
-                {
-                    int j = -1;
-                    foreach (var person in eachfamily)
-                    {
-                        j++;
-                        phaseForGPU[i * eachfamily.Count + j] = myphaseData[i].dataphase[person];
-                    }
-                }
-                deviceData2 = accelerator2.Allocate1D(phaseForGPU);
-
-                for (int j = 0; j < num_markers; j++)
-                {
-                    //Console.WriteLine(j);
-                    int startIndex = j;
-                    int endIndex = startIndex + num_rows - 1;
-                    if (endIndex >= num_markers) endIndex = num_markers-1;
-                    loadedKernel2(new Index1D(num_markers), startIndex, endIndex, num_markers, eachfamily.Count, deviceData2.View, deviceOutputV.View, deviceOutputN.View);
-                    accelerator2.Synchronize();
-                    float[] hostOutputV = deviceOutputV.GetAsArray1D();
-                    float[] hostOutputN = deviceOutputN.GetAsArray1D();
-                    //Console.WriteLine(hostOutput2.Length);
-                    for (int j2 = startIndex; j2 <= endIndex; j2++)
-                    {
-                        for (int i = 0; i < num_markers; i++)
-                        {
-                            if (n == 0)
-                            {
-                                distphaseN[i, j2] = hostOutputN[i + (j2 - startIndex) * num_markers];
-                                distphaseV[i, j2] = hostOutputV[i + (j2 - startIndex) * num_markers];
-                            }
-                            else
-                            {
-                                distphaseN[i, j2] += hostOutputN[i + (j2 - startIndex) * num_markers];
-                                distphaseV[i, j2] += hostOutputV[i + (j2 - startIndex) * num_markers];
-                            }
-                        }
-                        //Console.WriteLine(j2);
-                    }
-                    j += endIndex - startIndex;
-                }
-            }
-            accelerator2.Dispose();
-            context2.Dispose();
-
-            for (int j = 0; j < num_markers; j++)
-            {
-                for (int i = 0; i < num_markers; i++)
-                {
-                    distphase3[i, j] = 2 * distphaseV[i, j] / (float)distphaseN[i, j] - 1.0f;
-                }
-            }
-        }
 
         protected override void Initialize()
         {
@@ -386,26 +189,127 @@ namespace SELDLA_G
             _graphics.PreferMultiSampling = false;
             _graphics.PreferredBackBufferWidth = GraphicsDevice.DisplayMode.Width;
             _graphics.PreferredBackBufferHeight = GraphicsDevice.DisplayMode.Height;
-            //_graphics.PreferredBackBufferWidth = 2000;
-            //_graphics.PreferredBackBufferHeight = 1000;
-            //_graphics.IsFullScreen = true;
             _graphics.ApplyChanges();
 
             base.Initialize();
         }
+        int getPositionIndex(string chrname, int pos)
+        {
+            for(int i = 0; i<contigPositions.Count; i++)
+            {
 
+            }
+            contigPositions.Select((x, index) =>
+            {
+                if (x.chrname == chrname && x.start_bp < pos)
+                {
+                    return (x.contigname, 1);
+                }
+                else { return ("na", -1); }
+            }).Where(x => x.Item2 != -1).Take(1);
+            return myphaseData.Select((x, index) =>
+            {
+                if (x.chrorig == chrname && Int32.Parse(x.markerpos) < pos)
+                {
+                    return index;
+                }
+                else
+                {
+                    return -1;
+                }
+            }).Where(x => x!=-1).Take(1).ToArray()[0];
+            
+        }
         protected override void LoadContent()
         {
             // TODO: use this.Content to load your game content here
             Debug.WriteLine("LoadContent:");
+
+            contigPositions = File.ReadLines("scaffolds_FINAL.agp").AsParallel().AsOrdered().Where(line => line.Split("\t")[4] == "W").Select(line =>
+            {
+                var items = line.Split("\t");
+                ContigPos tempcontig = new ContigPos();
+                tempcontig.chrname = items[0];
+                tempcontig.contigname = items[5];
+                tempcontig.orientation = items[8];
+                tempcontig.start_bp = Int32.Parse(items[1]);
+                tempcontig.end_bp = Int32.Parse(items[2]);
+                return tempcontig;
+            }).ToList();
+            Console.WriteLine(contigPositions.Count);
+
+            myphaseData = new List<PhaseData>();
+            var chrStartIndex = new Dictionary<string, int>();
+            int i = -1;
+            int blocksize = 100 * 1000;
+            contigPositions.ForEach(contig =>
+            {
+                i++;
+                int tempstart = i;
+                int tempend = i + (int)((contig.end_bp- contig.start_bp-1) / blocksize);
+                i = tempend;
+                if(!chrStartIndex.ContainsKey(contig.chrname)) chrStartIndex.Add(contig.chrname, tempstart);
+                for (int j=0;j<(contig.end_bp-contig.start_bp+1)/(float)blocksize; j++)
+                {
+                    PhaseData tempphase = new PhaseData();
+                    tempphase.chr2nd = contig.chrname;
+                    tempphase.chrorig = contig.contigname;
+                    tempphase.chrorient = contig.orientation;
+                    tempphase.markerpos = (1 + blocksize*j).ToString();
+                    tempphase.chrorigStartIndex = tempstart;
+                    tempphase.chrorigEndIndex = tempend;
+                    myphaseData.Add(tempphase);
+                }
+            });
+            Console.WriteLine(myphaseData.Count);
+            num_markers = myphaseData.Count;
+            distphase3 = new float[num_markers, num_markers];
+
+            countmatrix = new int[myphaseData.Count, myphaseData.Count];
+            int count = 0;
+            foreach (string line in System.IO.File.ReadLines("alignments.txt"))
+            {
+                count++;
+                if (count % (1000*1000) == 0) Console.WriteLine(count);
+                if (count > 10*1000*1000) break;
+                //System.Console.WriteLine(line);
+                var items = line.Split("\t");
+                if (items.Length == 8)
+                {
+                    //if (items[1] != items[5] && int.Parse(items[2]) / blocksize != int.Parse(items[6]) / blocksize)
+                    {
+                        countmatrix[chrStartIndex[items[1]] + int.Parse(items[2]) / blocksize, chrStartIndex[items[5]] + int.Parse(items[6]) / blocksize] += int.Parse(items[4]);
+                        countmatrix[chrStartIndex[items[5]] + int.Parse(items[6]) / blocksize, chrStartIndex[items[1]] + int.Parse(items[2]) / blocksize] =
+                            countmatrix[chrStartIndex[items[1]] + int.Parse(items[2]) / blocksize, chrStartIndex[items[5]] + int.Parse(items[6]) / blocksize];
+                    }
+                }
+            }
+
+            int maxcount = Enumerable.Range(1, myphaseData.Count).AsParallel().Max(i =>
+                Enumerable.Range(1, myphaseData.Count).ToList().Max(j => countmatrix[i-1, j-1])
+            );
+            //int maxcount = countmatrix.Cast<int>().Max();
+            Console.WriteLine(maxcount);
+            System.Threading.Tasks.Parallel.For(0, myphaseData.Count, i =>
+            {
+                Enumerable.Range(0, myphaseData.Count - 1).ToList().ForEach(j => {
+                    if (countmatrix[i, j] > 0)
+                    {
+                        distphase3[i, j] = 10 * ((float)(Math.Log(countmatrix[i, j], 10) / Math.Log(maxcount, 10)));
+                        if (distphase3[i, j] > 1) distphase3[i, j] = 1;
+                    }
+                    
+                });
+            });
+
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             whiteRectangle = new Texture2D(GraphicsDevice, 1, 1);
             whiteRectangle.SetData(new[] { Color.White });
 
-            openFile(filePhase);
+            //openFile(filePhase);
 
             texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
-            calcMatchRate1line();
+            //calcMatchRate1line();
             setDistTexture();
 
             var w = GraphicsDevice.DisplayMode.Width; //500;
@@ -794,7 +698,7 @@ namespace SELDLA_G
                 {
                     openFile(filePhase);
                     texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
-                    calcMatchRate1line();
+                    //calcMatchRate1line();
                     setDistTexture();
 
                 }catch (Exception ex)
@@ -1273,47 +1177,19 @@ namespace SELDLA_G
             var str = Console.ReadLine();
             if (str != "") { savefileprefixname = str; }
 
-            texture.SaveAsPng(File.Create(savefileprefixname + ".contactmap.png"), num_markers, num_markers);
-            string[] result = new string[num_markers+1];
-            StringBuilder stra = new StringBuilder(myheader[0]);
-            for(int i = 1; i < myheader.Length; i++)
+            Console.WriteLine("Saving to " + savefileprefixname + ".link.txt");
+            using (var fs = new System.IO.StreamWriter(savefileprefixname + ".link.txt", false))
             {
-                stra.Append("\t"+myheader[i]);
+                for (int i = 0; i < num_markers; i++)
+                {
+                    for (int j = 0; j < num_markers; j++)
+                    {
+                        if(countmatrix[i,j]!=0) fs.WriteLine("0\t" + myphaseData[i].chr2nd + "\t" + myphaseData[i].markerpos + "\t0\t" + countmatrix[i, j] + "\t" + myphaseData[j].chr2nd + "\t" + myphaseData[j].markerpos + "\t1");
+                    }
+                }
             }
-            result[0]=stra.ToString();
 
-            for (int i = 0; i < result.Length-1; i++)
-            {
-                StringBuilder strb = new StringBuilder(myphaseData[i].chr2nd + "\t" + myphaseData[i].chr2nd);
-                if (myphaseData[i].chrorient == "+" || myphaseData[i].chrorient == "-")
-                {
-                    strb.Append("\t+\t" + myphaseData[i].chrorient);
-                }
-                else
-                {
-                    strb.Append("\tna\t" + myphaseData[i].chrorient);
-                }
-                strb.Append("\t" + myphaseData[i].chrorig + "\t" + myphaseData[i].markerpos);
-                for (int j = 0; j < myphaseData[i].dataphase.Count; j++)
-                {
-                    if (myphaseData[i].dataphase[j] == 1)
-                    {
-                        strb.Append("\t1");
-                    }
-                    else if (myphaseData[i].dataphase[j] == -1)
-                    {
-                        strb.Append("\t0");
-                    }
-                    else
-                    {
-                        strb.Append("\t-1");
-                    }
-                }
-                strb.Append("\n");
-                result[i+1] = strb.ToString();
-            }
-            Console.WriteLine("Saving to " + savefileprefixname+ ".phase.txt");
-            System.IO.File.WriteAllLines(savefileprefixname+".phase.txt", result);
+            texture.SaveAsPng(File.Create(savefileprefixname + ".contactmap.png"), num_markers, num_markers);
         }
         void drawRect(SpriteBatch sprite, Texture2D rect, int inworldx, int size, Color color)
         {

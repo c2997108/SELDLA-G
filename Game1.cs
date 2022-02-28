@@ -1323,7 +1323,6 @@ namespace SELDLA_G
             var str = Console.ReadLine();
             if (str != "") { savefileprefixname = str; }
 
-            texture.SaveAsPng(File.Create(savefileprefixname + ".contactmap.png"), num_markers, num_markers);
             string[] result = new string[num_markers+1];
             StringBuilder stra = new StringBuilder(myheader[0]);
             for(int i = 1; i < myheader.Length; i++)
@@ -1364,6 +1363,8 @@ namespace SELDLA_G
             }
             Console.WriteLine("Saving to " + savefileprefixname+ ".phase.txt");
             System.IO.File.WriteAllLines(savefileprefixname+".phase.txt", result);
+
+            texture.SaveAsPng(File.Create(savefileprefixname + ".contactmap.png"), num_markers, num_markers);
         }
         void drawRect(SpriteBatch sprite, Texture2D rect, int inworldx, int size, Color color)
         {

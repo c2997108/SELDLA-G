@@ -8,10 +8,10 @@ namespace SELDLA_G
         static void Main()
         {
             Console.WriteLine(System.Environment.CurrentDirectory);
-            using (var game = new Game1())
-                game.Run();
-            //using (var game = new Game2())
+            //using (var game = new Game1())
             //    game.Run();
+            using (var game = new Game2())
+                game.Run();
         }
     }
 }
