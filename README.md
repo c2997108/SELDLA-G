@@ -3,16 +3,22 @@
 このツールは、de novoゲノム構築時に使用する連鎖解析ツールであるhttps://github.com/c2997108/SELDLA
 で出力されたファイルを使って、Hi-Cのコンタクトマップ風に操作してエラーなどを除去しながら最終的なゲノム構築を行うツールです。
 
+## インストール
 
-## 実行環境のセットアップ
+https://github.com/c2997108/SELDLA-G/releases/download/v0.6.2/SELDLA-G_v0.6.2.zip
+からダウンロードして、解凍する。SELDLA-Gをダブルクリックすれば実行できます。
 
-- .NET Core 3.1 Runtime (v3.1)
-- .NET 6
+## 動作環境
+
+- Windows 10 or 11
+- Nvidia GT710以降のGPUでは確認済み (AMDやINDELの新しいGPUなら大丈夫かも。未確認。）
+
+一応Linuxでも動作したけど、Macのarm版は今のところVisual Studioから出力できないのでM1 Macは対応できそうにない。
 
 ## 開発環境のセットアップ
 
 - .NET Core 3.1 Runtime (v3.1)
-- Visual Studio 2022
+- Visual Studio 2022 (.NET 6)
 
 ## 使用方法
 
