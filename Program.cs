@@ -10,6 +10,8 @@ namespace SELDLA_G
             Console.WriteLine(System.Environment.CurrentDirectory);
             using (var game = new Game1())
                 game.Run();
+            //using (var game = new Game2())
+            //    game.Run();
         }
     }
 }

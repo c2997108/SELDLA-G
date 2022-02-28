@@ -15,7 +15,7 @@ using System.Text;
 
 namespace SELDLA_G
 {
-    public class Game1 : Game
+    public class Game2 : Game
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
@@ -63,12 +63,16 @@ namespace SELDLA_G
         //string filePhase = "../../../seldla2nd_chain.ph.all.txt";
 
 
-        public Game1()
+        public Game2()
         {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
 
+            File.ReadAllLines("test").ToList().ForEach(line =>
+            {
+
+            });
         }
 
         void openFile(string filename)
@@ -305,128 +309,74 @@ namespace SELDLA_G
                 if (num_markers * (i + 1) > maxItemsSize) break;
             }
             distphase3 = new float[num_markers, num_markers];
+            float[,] distphaseN = new float[num_markers, num_markers];
+            float[,] distphaseV = new float[num_markers, num_markers];
             int[] phaseForGPU;
-            using Context context2 = Context.Create(builder => builder.AllAccelerators());
-            //using Context context2 = Context.Create(builder => builder.OpenCL());
+            using Context context2 = Context.Create(builder => builder.AllAccelerators()); //Context.Create(builder => builder.OpenCL());
             Accelerator accelerator2 = context2.GetPreferredDevice(preferCPU: false).CreateAccelerator(context2);
-            //Accelerator accelerator2 = context2.GetPreferredDevice(preferCPU: true).CreateAccelerator(context2);
             accelerator2.PrintInformation();
-
-            if(accelerator2.AcceleratorType == AcceleratorType.CPU) //CPUの場合
+            MemoryBuffer1D<int, Stride1D.Dense> deviceData2;
+            MemoryBuffer1D<float, Stride1D.Dense> deviceOutputV = accelerator2.Allocate1D<float>(num_markers * num_rows);
+            MemoryBuffer1D<float, Stride1D.Dense> deviceOutputN = accelerator2.Allocate1D<float>(num_markers * num_rows);
+            Action<Index1D, int, int, int, int, ArrayView<int>, ArrayView<float>, ArrayView<float>> loadedKernel2 =
+                accelerator2.LoadAutoGroupedStreamKernel<Index1D, int, int, int, int, ArrayView<int>, ArrayView<float>, ArrayView<float>>(CalcMatchN1lineKernel);
+            int n = -1;
+            foreach (var eachfamily in myfamily.Values)
             {
-                float[,] tempdataN = new float[num_markers, num_markers];
-                float[,] tempdataV = new float[num_markers, num_markers];
-                System.Threading.Tasks.Parallel.For(0, num_markers, j => {
-                    for (int i = 0; i < num_markers; i++)
+                n++;
+                //Console.WriteLine(n);
+                phaseForGPU = new int[num_markers * eachfamily.Count];
+                for (int i = 0; i < num_markers; i++)
+                {
+                    int j = -1;
+                    foreach (var person in eachfamily)
                     {
-                        foreach (var eachfamily in myfamily.Values)
+                        j++;
+                        phaseForGPU[i * eachfamily.Count + j] = myphaseData[i].dataphase[person];
+                    }
+                }
+                deviceData2 = accelerator2.Allocate1D(phaseForGPU);
+
+                for (int j = 0; j < num_markers; j++)
+                {
+                    //Console.WriteLine(j);
+                    int startIndex = j;
+                    int endIndex = startIndex + num_rows - 1;
+                    if (endIndex >= num_markers) endIndex = num_markers-1;
+                    loadedKernel2(new Index1D(num_markers), startIndex, endIndex, num_markers, eachfamily.Count, deviceData2.View, deviceOutputV.View, deviceOutputN.View);
+                    accelerator2.Synchronize();
+                    float[] hostOutputV = deviceOutputV.GetAsArray1D();
+                    float[] hostOutputN = deviceOutputN.GetAsArray1D();
+                    //Console.WriteLine(hostOutput2.Length);
+                    for (int j2 = startIndex; j2 <= endIndex; j2++)
+                    {
+                        for (int i = 0; i < num_markers; i++)
                         {
-                            int sum1 = 0;
-                            int sum2 = 0;
-                            int n = 0;
-                            int n_samples = eachfamily.Count;
-                            foreach (var person in eachfamily)
-                            {
-                                if (myphaseData[i].dataphase[person] != 0 && myphaseData[j].dataphase[person] != 0)
-                                {
-                                    n++;
-                                    if (myphaseData[i].dataphase[person] == myphaseData[j].dataphase[person])
-                                    {
-                                        sum1++;
-                                    }
-                                    if (myphaseData[i].dataphase[person] == -myphaseData[j].dataphase[person])
-                                    {
-                                        sum2++;
-                                    }
-                                }
-                            }
-                            tempdataN[i, j] = n;
                             if (n == 0)
                             {
-                                tempdataV[i, j] += 0;
+                                distphaseN[i, j2] = hostOutputN[i + (j2 - startIndex) * num_markers];
+                                distphaseV[i, j2] = hostOutputV[i + (j2 - startIndex) * num_markers];
                             }
                             else
                             {
-                                if (sum1 > sum2)
-                                {
-                                    tempdataV[i, j] += sum1;
-                                }
-                                else
-                                {
-                                    tempdataV[i, j] += sum2;
-                                }
+                                distphaseN[i, j2] += hostOutputN[i + (j2 - startIndex) * num_markers];
+                                distphaseV[i, j2] += hostOutputV[i + (j2 - startIndex) * num_markers];
                             }
                         }
+                        //Console.WriteLine(j2);
                     }
-                });
-                System.Threading.Tasks.Parallel.For(0, num_markers, j =>
-                {
-                    for (int i = 0; i < num_markers; i++)
-                    {
-                        distphase3[i, j] = 2 * tempdataV[i, j] / (float)tempdataN[i, j] - 1.0f;
-                    }
-                });
-            }
-            else //GPUが使えるときはこっち
-            {
-                float[,] distphaseN = new float[num_markers, num_markers]; //配列は0で初期化されている。言語仕様的に。
-                float[,] distphaseV = new float[num_markers, num_markers];
-                MemoryBuffer1D<int, Stride1D.Dense> deviceData2;
-                MemoryBuffer1D<float, Stride1D.Dense> deviceOutputV = accelerator2.Allocate1D<float>(num_markers * num_rows);
-                MemoryBuffer1D<float, Stride1D.Dense> deviceOutputN = accelerator2.Allocate1D<float>(num_markers * num_rows);
-                Action<Index1D, int, int, int, int, ArrayView<int>, ArrayView<float>, ArrayView<float>> loadedKernel2 =
-                    accelerator2.LoadAutoGroupedStreamKernel<Index1D, int, int, int, int, ArrayView<int>, ArrayView<float>, ArrayView<float>>(CalcMatchN1lineKernel);
-                int n = -1;
-                foreach (var eachfamily in myfamily.Values)
-                {
-                    n++;
-                    //Console.WriteLine(n);
-                    phaseForGPU = new int[num_markers * eachfamily.Count];
-                    for (int i = 0; i < num_markers; i++)
-                    {
-                        int j = -1;
-                        foreach (var person in eachfamily)
-                        {
-                            j++;
-                            phaseForGPU[i * eachfamily.Count + j] = myphaseData[i].dataphase[person];
-                        }
-                    }
-                    deviceData2 = accelerator2.Allocate1D(phaseForGPU);
-
-                    for (int j = 0; j < num_markers; j++)
-                    {
-                        //Console.WriteLine(j);
-                        int startIndex = j;
-                        int endIndex = startIndex + num_rows - 1;
-                        if (endIndex >= num_markers) endIndex = num_markers - 1;
-                        loadedKernel2(new Index1D(num_markers), startIndex, endIndex, num_markers, eachfamily.Count, deviceData2.View, deviceOutputV.View, deviceOutputN.View);
-                        accelerator2.Synchronize();
-                        float[] hostOutputV = deviceOutputV.GetAsArray1D();
-                        float[] hostOutputN = deviceOutputN.GetAsArray1D();
-                        //Console.WriteLine(hostOutput2.Length);
-                        for (int j2 = startIndex; j2 <= endIndex; j2++)
-                        {
-                            for (int i = 0; i < num_markers; i++)
-                            {
-                                    distphaseN[i, j2] += hostOutputN[i + (j2 - startIndex) * num_markers];
-                                    distphaseV[i, j2] += hostOutputV[i + (j2 - startIndex) * num_markers];
-                            }
-                            //Console.WriteLine(j2);
-                        }
-                        j += endIndex - startIndex;
-                    }
+                    j += endIndex - startIndex;
                 }
-                accelerator2.Dispose();
-                context2.Dispose();
+            }
+            accelerator2.Dispose();
+            context2.Dispose();
 
-                System.Threading.Tasks.Parallel.For(0, num_markers, j =>
+            for (int j = 0; j < num_markers; j++)
+            {
+                for (int i = 0; i < num_markers; i++)
                 {
-                    for (int i = 0; i < num_markers; i++)
-                    {
-                        distphase3[i, j] = 2 * distphaseV[i, j] / (float)distphaseN[i, j] - 1.0f;
-                    }
-                });
-
+                    distphase3[i, j] = 2 * distphaseV[i, j] / (float)distphaseN[i, j] - 1.0f;
+                }
             }
         }
 
