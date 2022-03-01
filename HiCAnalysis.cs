@@ -135,6 +135,7 @@ namespace SELDLA_G
                     }
                     tempphase.chrorigStartIndex = tempstart;
                     tempphase.chrorigEndIndex = tempend;
+                    tempphase.contigsize = contig.end_bp - contig.start_bp + 1;
                     myphaseData.Add(tempphase);
                 }
             });
@@ -162,7 +163,7 @@ namespace SELDLA_G
             {
                 count++;
                 if (count % (1000 * 1000) == 0) Console.WriteLine(count);
-                //if (count > 10 * 1000 * 1000) break;
+                if (count > 10 * 1000 * 1000) break;
                 var items = line.Split("\t");
                 if (items.Length == 4)
                 {
@@ -725,6 +726,18 @@ namespace SELDLA_G
                 
             }
 
+            if (state.IsKeyDown(Keys.B) && changing == false)
+            {
+                changing = true;
+
+                Console.WriteLine("Current color intensity amplification: " + color_fold + "");
+                Console.WriteLine("Enter new color intensity. [" + color_fold + "]");
+                var str = Console.ReadLine();
+                if (str != "") { color_fold = int.Parse(str); }
+
+                setDistTexture();
+
+            }
 
             base.Update(gameTime);
         }
@@ -1209,6 +1222,34 @@ namespace SELDLA_G
                     }
                 }
             }
+            Console.WriteLine("Saving to " + savefileprefixname + ".agp");
+            using (var fs = new System.IO.StreamWriter(savefileprefixname + ".agp", false))
+            {
+                string oldchr = "";
+                int j = 0;
+                int oldpos = 0;
+                string oldcontig = "";
+                for (int i = 0; i < num_markers; i++)
+                {
+                    if(myphaseData[i].chrorig != oldcontig)
+                    {
+                        oldcontig = myphaseData[i].chrorig;
+                        if (myphaseData[i].chr2nd != oldchr)
+                        {
+                            j = 1;
+                            oldchr = myphaseData[i].chr2nd;
+                            fs.WriteLine(myphaseData[i].chr2nd + "\t1\t" + myphaseData[i].contigsize + "\t" + j + "\tW\t" + myphaseData[i].chrorig + "\t1\t" + myphaseData[i].contigsize + "\t" + myphaseData[i].chrorient);
+                            oldpos = myphaseData[i].contigsize;
+                        }
+                        else
+                        {
+                            j++;
+                            fs.WriteLine(myphaseData[i].chr2nd + "\t" + (oldpos + 1) + "\t" + (oldpos + myphaseData[i].contigsize) + "\t" + j + "\tW\t" + myphaseData[i].chrorig + "\t1\t" + myphaseData[i].contigsize + "\t" + myphaseData[i].chrorient);
+                            oldpos += myphaseData[i].contigsize;
+                        }
+                    }
+                }
+            }
 
             texture.SaveAsPng(File.Create(savefileprefixname + ".contactmap.png"), num_markers, num_markers);
         }
@@ -1220,47 +1261,6 @@ namespace SELDLA_G
             sprite.Draw(rect, new Rectangle((int)(inworldx * worldW + worldX), (int)((inworldx+size) * worldW + worldY), (int)(size * worldW), (int)1), color);
 
         }
-        /*void calcMatchRate()
-        {
-            int[] phaseForGPU = new int[num_markers * myphaseData[0].dataphase.Count];
-            for (int i = 0; i < num_markers; i++)
-            {
-                for (int j = 0; j < myphaseData[0].dataphase.Count; j++)
-                {
-                    phaseForGPU[i * myphaseData[0].dataphase.Count + j] = myphaseData[i].dataphase[j];
-                }
-            }
-            using Context context2 = Context.Create(builder => builder.AllAccelerators());
-            Accelerator accelerator2 = context2.GetPreferredDevice(preferCPU: false).CreateAccelerator(context2);
-            accelerator2.PrintInformation();
-            MemoryBuffer1D<int, Stride1D.Dense> deviceData2 = accelerator2.Allocate1D(phaseForGPU);
-            MemoryBuffer1D<float, Stride1D.Dense> deviceOutput2 = accelerator2.Allocate1D<float>(num_markers * num_markers);
-            Action<Index2D, int, int, ArrayView<int>, ArrayView<float>> loadedKernel2 =
-                accelerator2.LoadAutoGroupedStreamKernel<Index2D, int, int, ArrayView<int>, ArrayView<float>>(CalcMatchRateKernel);
-            loadedKernel2(new Index2D(num_markers, num_markers), num_markers, myphaseData[0].dataphase.Count, deviceData2.View, deviceOutput2.View);
-            accelerator2.Synchronize();
-            float[] hostOutput2 = deviceOutput2.GetAsArray1D();
-            Console.WriteLine(hostOutput2.Length);
-            distphase3 = new float[num_markers, num_markers];
-            for (int i = 0; i < num_markers; i++)
-            {
-                for (int j = 0; j < num_markers; j++)
-                {
-                    distphase3[i, j] = hostOutput2[i * num_markers + j];
-                }
-            }
-
-            for (int i = 0; i < 10; i++)
-            {
-                for (int j = 0; j < 10; j++)
-                {
-                    Console.Write("\t" + distphase3[i, j]);
-                }
-                Console.WriteLine("");
-            }
-            accelerator2.Dispose();
-            context2.Dispose();
-        }*/
 
         List<PhaseData> updatePhaseDelete(int areaStart, int areaEnd)
         {

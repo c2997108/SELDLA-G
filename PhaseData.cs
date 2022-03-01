@@ -48,5 +48,6 @@ namespace SELDLA_G
         public List<int> dataphase;
         public int chrorigStartIndex = -1;
         public int chrorigEndIndex = -1;
+        public int contigsize;
     }
 }
