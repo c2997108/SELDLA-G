@@ -57,16 +57,13 @@ namespace SELDLA_G
         Dictionary<string, float> chrcmsize = new Dictionary<string, float>();
         Dictionary<string, Dictionary<int, int>> posToIndex = new Dictionary<string, Dictionary<int, int>>();
         int blocksize = 100 * 1000;
-        string fileSeq = "demo_shiitake_sequence.txt";
+        string fileSeq = "assembly.cleaned.fasta";
         //string fileSeq = "../../../cl0.92_sp0.90_ex0.60_split_seq.txt";
-        string filePhase = "demo_shiitake_phase.txt";
-        //string filePhase = "../../../savedate.txt";
-        //string filePhase = "../../../seldla2nd_chain.ld2imp.all.txt";
-        //string filePhase = "../../../seldla2nd_chain.ph.all.txt";
         string fileAGP = "scaffolds_FINAL.agp";
         string fileBED = "alignment_iteration_1.bed";
         string fileCalculated = "hic_output.matrix";
         int[,] countmatrix;
+        int color_fold = 10;
 
 
         public HiCAnalysis()
@@ -165,7 +162,7 @@ namespace SELDLA_G
             {
                 count++;
                 if (count % (1000 * 1000) == 0) Console.WriteLine(count);
-                if (count > 10 * 1000 * 1000) break;
+                //if (count > 10 * 1000 * 1000) break;
                 var items = line.Split("\t");
                 if (items.Length == 4)
                 {
@@ -303,84 +300,29 @@ namespace SELDLA_G
 
             base.Initialize();
         }
-        int getPositionIndex(string chrname, int pos)
-        {
-            for(int i = 0; i<contigPositions.Count; i++)
-            {
-
-            }
-            contigPositions.Select((x, index) =>
-            {
-                if (x.chrname == chrname && x.start_bp < pos)
-                {
-                    return (x.contigname, 1);
-                }
-                else { return ("na", -1); }
-            }).Where(x => x.Item2 != -1).Take(1);
-            return myphaseData.Select((x, index) =>
-            {
-                if (x.chrorig == chrname && Int32.Parse(x.markerpos) < pos)
-                {
-                    return index;
-                }
-                else
-                {
-                    return -1;
-                }
-            }).Where(x => x!=-1).Take(1).ToArray()[0];
-            
-        }
         protected override void LoadContent()
         {
             // TODO: use this.Content to load your game content here
             Debug.WriteLine("LoadContent:");
 
-            openFileBED(fileAGP, fileBED);
 
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             whiteRectangle = new Texture2D(GraphicsDevice, 1, 1);
             whiteRectangle.SetData(new[] { Color.White });
 
-            //openFile(filePhase);
+            openFileBED(fileAGP, fileBED);
 
             texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
-            //calcMatchRate1line();
             setDistTexture();
 
             var w = GraphicsDevice.DisplayMode.Width; //500;
             var h = 80;
             bitmap = new SKBitmap(w, h);
             canvas = new SKCanvas(bitmap);
-                // 透明色で塗りつぶす
-                canvas.Clear(SKColors.Transparent);
-            /*
-                // 虹色グラデーションシェーダー
-                var shader = SKShader.CreateSweepGradient(
-                    new SKPoint(w / 2, h / 2),
-                    new[] {
-                        new SKColor(0x00,0x00,0xff),
-                        new SKColor(0x00,0xdb,0xff),
-                        new SKColor(0x00,0xff,0x49),
-                        new SKColor(0x91,0xff,0x00),
-                        new SKColor(0xff,0x93,0x00),
-                        new SKColor(0xff,0x00,0x47),
-                        new SKColor(0xdd,0x00,0xff),
-                    }, null);
-
-                var paint = new SKPaint
-                {
-                    Shader = shader,
-                    StrokeWidth = 50,
-                    IsStroke = true,
-                };
-
-                // 円を描く
-                canvas.DrawCircle(w / 2, h / 2, w / 4, paint);
-*/
+            canvas.Clear(SKColors.Transparent);
             paintPop = new SKPaint();
             paintPop.TextSize = 25;
             paintPop.Color = SKColors.Black;
-            //canvas.DrawText("test",10,50, paintPop);
             // 描画コマンド実行
             canvas.Flush();
 
@@ -879,13 +821,29 @@ namespace SELDLA_G
         void openseq(string file)
         {
             contigPositions = new List<ContigPos>();
-            seq = File.ReadLines(file).AsParallel().ToDictionary(x => x.Split("\t")[0], x=>x.Split("\t")[1]);
-/*            seq = new Dictionary<string, string>();
-            File.ReadLines(file).AsParallel().AsOrdered().ForAll(line =>
+
+            //FASTAファイル読み出し
+            var tempseq = new StringBuilder();
+            string tempseqname = "";
+            foreach (string line in System.IO.File.ReadLines(file))
             {
-                var arr = line.Split("\t");
-                seq.Add(arr[0], arr[1]);
-            });*/
+                if (line.StartsWith(">"))
+                {
+                    if(tempseqname != "")
+                    {
+                        seq.Add(tempseqname, tempseq.ToString());
+                    }
+                    tempseq = new StringBuilder();
+                    tempseqname = line.Split(" ")[0].Split("\t")[0].Replace("\r", "").Replace("\n", "");
+                    tempseqname = tempseqname.Substring(1);
+                }
+                else
+                {
+                    tempseq.Append(line.Replace("\r", "").Replace("\n", ""));
+                }
+            }
+            seq.Add(tempseqname, tempseq.ToString());
+
             Console.WriteLine(seq.Count);
             
             var extendedSeq = new Dictionary<string, StringBuilder>();
@@ -990,6 +948,7 @@ namespace SELDLA_G
                     else
                     {
                         extendedSeq[phase.chr2nd].Append(strN);
+                        extendedSeqNAexcludedChr[phase.chr2nd].Append(strN);
                         if (phase.chrorient == "+")
                         {
                             extendedSeq[phase.chr2nd].Append(seq[phase.chrorig]);
@@ -1059,7 +1018,7 @@ namespace SELDLA_G
                 }
             }
 
-            drawGraph();
+            //drawGraph();
         }
 
         void drawGraph()
@@ -1517,11 +1476,14 @@ namespace SELDLA_G
         void setDistTexture()
         {
             var dataColors = new Color[num_markers * num_markers];
+            int tempcol = 0;
             for (int i = 0; i < num_markers; i++)
             {
                 for (int j = 0; j < num_markers; j++)
                 {
-                    dataColors[i * num_markers + j] = new Color((int)(255 * distphase3[i, j]), 0, 0);
+                    tempcol = color_fold * (int)(255 * distphase3[i, j]);
+                    if (tempcol > 255) tempcol = 255;
+                    dataColors[i * num_markers + j] = new Color(tempcol, 0, 0);
                 }
             }
             texture.SetData(dataColors);

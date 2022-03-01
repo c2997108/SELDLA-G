@@ -1074,6 +1074,7 @@ namespace SELDLA_G
                     else
                     {
                         extendedSeq[phase.chr2nd].Append(strN);
+                        extendedSeqNAexcludedChr[phase.chr2nd].Append(strN);
                         if (phase.chrorient == "+")
                         {
                             extendedSeq[phase.chr2nd].Append(seq[phase.chrorig]);
