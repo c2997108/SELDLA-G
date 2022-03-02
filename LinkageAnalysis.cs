@@ -512,7 +512,24 @@ namespace SELDLA_G
         protected override void Update(GameTime gameTime)
         {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-                Exit();
+            {
+                markN = 0;
+                markNstart = new int[3];
+                markNend = new int[3];
+                markM = 0;
+                markMstart1 = new int[3];
+                markMend1 = new int[3];
+                markMstart2 = new int[3];
+                markMend2 = new int[3];
+                markF = 0;
+                markFstart = new int[3];
+                markFend = new int[3];
+                markG = 0;
+                markGstart1 = new int[3];
+                markGend1 = new int[3];
+                markGstart2 = new int[3];
+                markGend2 = new int[3];
+            }
 
             // TODO: Add your update logic here
             Debug.WriteLine("Update:");
@@ -964,6 +981,65 @@ namespace SELDLA_G
                     for (int i = 0; i < num_markers; i++)
                     {
                         if (i >= markNstart[2] && i <= markNend[2])
+                        {
+                            myphaseData[i].chr2nd = str;
+                        }
+
+                    }
+                }
+            }
+
+            if (state.IsKeyDown(Keys.W) && changing == false)
+            {
+                changing = true;
+                if (markF == 0)
+                {
+                    markF = 1;
+                    for (int i = pos1.X; i < num_markers; i++)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markFend[0] = i; } else { break; }
+                    }
+                    for (int i = pos1.X; i >= 0; i--)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markFstart[0] = i; } else { break; }
+                    }
+                }
+                else if (markF == 1)
+                {
+                    markF = 0;
+                    for (int i = pos1.X; i < num_markers; i++)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markFend[1] = i; } else { break; }
+                    }
+                    for (int i = pos1.X; i >= 0; i--)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markFstart[1] = i; } else { break; }
+                    }
+                    if (markFstart[0] < markFstart[1])
+                    {
+                        markFstart[2] = markFstart[0];
+                        markFend[2] = markFend[1];
+                    }
+                    else
+                    {
+                        markFstart[2] = markFstart[1];
+                        markFend[2] = markFend[0];
+                    }
+
+                    var templist = new List<string>();
+                    for (int i = markFstart[2]; i <= markFend[2]; i++)
+                    {
+                        templist.Add(myphaseData[i].chr2nd);
+                    }
+                    Console.WriteLine("Original chr names:");
+                    templist.Distinct().ToList().ForEach(c => Console.WriteLine(c));
+                    Console.WriteLine("Input new chr name");
+                    var str = Console.ReadLine();
+
+                    List<PhaseData> tempmyphaseData = new List<PhaseData>();
+                    for (int i = 0; i < num_markers; i++)
+                    {
+                        if (i >= markFstart[2] && i <= markFend[2])
                         {
                             myphaseData[i].chr2nd = str;
                         }
