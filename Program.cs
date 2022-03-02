@@ -10,6 +10,7 @@ namespace SELDLA_G
             Console.WriteLine(System.Environment.CurrentDirectory);
             if(args.Length == 0 || args[0] == "linkage")
             {
+                //using (var game = new HiCAnalysis())
                 using (var game = new LinkageAnalysis())
                     game.Run();
             }else if(args[0] == "hic")

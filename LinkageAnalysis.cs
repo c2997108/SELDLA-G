@@ -69,6 +69,8 @@ namespace SELDLA_G
         //string filePhase = "../../../savedate.txt";
         //string filePhase = "../../../seldla2nd_chain.ld2imp.all.txt";
         //string filePhase = "../../../seldla2nd_chain.ph.all.txt";
+        float[,] backdistphase3;
+        List<PhaseData> backmyphaseData;
 
 
         public LinkageAnalysis()
@@ -170,7 +172,7 @@ namespace SELDLA_G
                 if (tempphase.chrorigStartIndex == -1)
                 {
                     tempphase.chrorigStartIndex = i;
-                    for (int j = i + 1; j < myphaseData.Count; j++)
+                    for (int j = i; j < myphaseData.Count; j++)
                     {
                         if (tempphase.chrorig == myphaseData[j].chrorig)
                         {
@@ -508,7 +510,15 @@ namespace SELDLA_G
             texturePop.SetData(bitmap.Bytes);
             
         }
-
+        void backupdata()
+        {
+            backdistphase3 = distphase3.Clone() as float[,];
+            backmyphaseData = new List<PhaseData>();
+            for(int i = 0; i < myphaseData.Count; i++)
+            {
+                backmyphaseData.Add(myphaseData[i].DeepCopy());
+            }
+        }
         protected override void Update(GameTime gameTime)
         {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
@@ -598,11 +608,24 @@ namespace SELDLA_G
                 changing = false;
             }
 
+            if (state.IsKeyDown(Keys.Z) && changing == false)
+            {
+                changing = true;
+
+                if (backmyphaseData.Count > 0)
+                {
+                    myphaseData = backmyphaseData;
+                    distphase3 = backdistphase3;
+                    backmyphaseData = new List<PhaseData>();
+                    setDistTexture();
+                }
+            }
             // Move our sprite based on arrow keys being pressed:
             if (state.IsKeyDown(Keys.R) && changing == false)
             {
                 changing = true;
 
+                backupdata();
                 updateDistanceReverse(pos1.chrStart, pos1.chrEnd);
                 myphaseData = updatePhaseReverse(pos1.chrStart, pos1.chrEnd);
                 updatePhaseIndex();
@@ -614,6 +637,7 @@ namespace SELDLA_G
                 changing = true;
                 if(myphaseData[pos1.X].chr2nd != myphaseData[pos2.X].chr2nd)
                 {
+                    backupdata();
                     updateDistanceChange(pos1.chrStart, pos1.chrEnd, pos2.chrStart, pos2.chrEnd);
                     myphaseData = updatePhaseChange(pos1.chrStart, pos1.chrEnd, pos2.chrStart, pos2.chrEnd);
                     updatePhaseIndex();
@@ -626,6 +650,7 @@ namespace SELDLA_G
             {
                 changing = true;
 
+                backupdata();
                 updateDistanceReverse(pos1.contigStart, pos1.contigEnd);
                 myphaseData = updatePhaseReverse(pos1.contigStart, pos1.contigEnd);
                 updatePhaseIndex();
@@ -637,6 +662,7 @@ namespace SELDLA_G
                 changing = true;
                 if (myphaseData[pos1.X].chrorig != myphaseData[pos2.X].chrorig)
                 {
+                    backupdata();
                     updateDistanceChange(pos1.contigStart, pos1.contigEnd, pos2.contigStart, pos2.contigEnd);
                     myphaseData = updatePhaseChange(pos1.contigStart, pos1.contigEnd, pos2.contigStart, pos2.contigEnd);
                     updatePhaseIndex();
@@ -682,6 +708,7 @@ namespace SELDLA_G
                         markFend[2] = markFend[0];
                     }
 
+                    backupdata();
                     updateDistanceReverse(markFstart[2], markFend[2]);
                     myphaseData = updatePhaseReverse(markFstart[2], markFend[2]);
                     updatePhaseIndex();
@@ -769,6 +796,7 @@ namespace SELDLA_G
                         && !(markGstart2[2] >= markGstart1[2] && markGstart2[2] <= markGend1[2])
                         && !(markGend2[2] >= markGstart1[2] && markGend2[2] <= markGend1[2]))
                     {
+                        backupdata();
                         updateDistanceChange(markGstart1[2], markGend1[2], markGstart2[2], markGend2[2]);
                         myphaseData = updatePhaseChange(markGstart1[2], markGend1[2], markGstart2[2], markGend2[2]);
                         updatePhaseIndex();
@@ -819,6 +847,7 @@ namespace SELDLA_G
                         markNend[2] = markNend[0];
                     }
 
+                    backupdata();
                     updateDistanceReverse(markNstart[2], markNend[2]);
                     myphaseData = updatePhaseReverse(markNstart[2], markNend[2]);
                     updatePhaseIndex();
@@ -906,6 +935,7 @@ namespace SELDLA_G
                         && !(markMstart2[2] >= markMstart1[2] && markMstart2[2] <= markMend1[2])
                         && !(markMend2[2] >= markMstart1[2] && markMend2[2] <= markMend1[2]))
                     {
+                        backupdata();
                         updateDistanceChange(markMstart1[2], markMend1[2], markMstart2[2], markMend2[2]);
                         myphaseData = updatePhaseChange(markMstart1[2], markMend1[2], markMstart2[2], markMend2[2]);
                         updatePhaseIndex();
@@ -924,6 +954,7 @@ namespace SELDLA_G
             {
                 changing = true;
 
+                backupdata();
                 updateDistanceDelete(pos1.contigStart, pos1.contigEnd);
                 myphaseData = updatePhaseDelete(pos1.contigStart, pos1.contigEnd);
                 updatePhaseIndex();
@@ -977,6 +1008,7 @@ namespace SELDLA_G
                     Console.WriteLine("Input new chr name");
                     var str = Console.ReadLine();
 
+                    backupdata();
                     List<PhaseData> tempmyphaseData = new List<PhaseData>();
                     for (int i = 0; i < num_markers; i++)
                     {
@@ -1036,6 +1068,7 @@ namespace SELDLA_G
                     Console.WriteLine("Input new chr name");
                     var str = Console.ReadLine();
 
+                    backupdata();
                     List<PhaseData> tempmyphaseData = new List<PhaseData>();
                     for (int i = 0; i < num_markers; i++)
                     {
@@ -1063,6 +1096,7 @@ namespace SELDLA_G
                 if (str != "") { filePhase = str; }
                 try
                 {
+                    backupdata();
                     openFile(filePhase);
                     texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
                     calcMatchRate1line();
@@ -1084,6 +1118,7 @@ namespace SELDLA_G
                 var str = Console.ReadLine();
                 if (str != "") { fileSeq = str; }
 
+                backupdata();
                 openseq(fileSeq);
                 
             }
@@ -1102,10 +1137,10 @@ namespace SELDLA_G
             _spriteBatch.Begin();
             _spriteBatch.Draw(texture, new Vector2((float)worldX, (float)worldY), null, Color.White, 0.0f, Vector2.Zero, new Vector2((float)worldW, (float)worldW), SpriteEffects.None, 0.0f);
 
-            drawRect(_spriteBatch, whiteRectangle, pos1.chrStart, pos1.chrEnd - pos1.chrStart + 1, Color.Yellow);
-            drawRect(_spriteBatch, whiteRectangle, pos1.contigStart, pos1.contigEnd - pos1.contigStart + 1, Color.Green);
-            drawRect(_spriteBatch, whiteRectangle, pos2.chrStart, pos2.chrEnd - pos2.chrStart + 1, Color.Yellow);
-            drawRect(_spriteBatch, whiteRectangle, pos2.contigStart, pos2.contigEnd - pos2.contigStart + 1, Color.Green);
+            drawRect(_spriteBatch, whiteRectangle, pos1.chrStart, pos1.chrEnd - pos1.chrStart + 1, Color.Blue);
+            drawRect(_spriteBatch, whiteRectangle, pos1.contigStart, pos1.contigEnd - pos1.contigStart + 1, Color.LightGreen);
+            drawRect(_spriteBatch, whiteRectangle, pos2.chrStart, pos2.chrEnd - pos2.chrStart + 1, Color.Blue);
+            drawRect(_spriteBatch, whiteRectangle, pos2.contigStart, pos2.contigEnd - pos2.contigStart + 1, Color.LightGreen);
 
             if (markF == 1)
             {
@@ -1925,7 +1960,11 @@ namespace SELDLA_G
             {
                 for (int j = 0; j < num_markers; j++)
                 {
-                    dataColors[i * num_markers + j] = new Color((int)(255 * distphase3[i, j]), 0, 0);
+                    //背景白
+                    dataColors[i * num_markers + j] = new Color(255, (int)(255 * (1 - distphase3[i, j])), (int)(255 * (1 - distphase3[i, j])));
+                    //背景黒
+                    //dataColors[i * num_markers + j] = new Color((int)(255 * distphase3[i, j]), 0, 0);
+
                 }
             }
             texture.SetData(dataColors);

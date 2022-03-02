@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 
+using System.Runtime.Serialization.Formatters.Binary;
+using System.IO;
+
 namespace SELDLA_G
 {
     class ContigPos : System.IComparable
@@ -19,15 +22,17 @@ namespace SELDLA_G
             //違う型とは比較できない
             if (this.GetType() != obj.GetType()) throw new ArgumentException("別の型とは比較できません。", "obj");
 
-            if(this.chrname != ((ContigPos)obj).chrname)
+            if (this.chrname != ((ContigPos)obj).chrname)
             {
                 return this.chrname.CompareTo(((ContigPos)obj).chrname);
             }
             else
-
+            { 
                 return this.start_bp.CompareTo(((ContigPos)obj).start_bp);
             }
         }
+    }
+
     class MarkerPos
     {
         public int X;
@@ -39,6 +44,7 @@ namespace SELDLA_G
         public int contigEnd = -1;
     }
 
+    [Serializable]
     internal class PhaseData
     {
         public string chr2nd;
@@ -50,5 +56,15 @@ namespace SELDLA_G
         public int chrorigEndIndex = -1;
         public int contigsize;
         public int regionsize;
+        public PhaseData DeepCopy()
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                BinaryFormatter bf = new BinaryFormatter();
+                bf.Serialize(ms, this);
+                ms.Position = 0;
+                return (PhaseData)bf.Deserialize(ms);
+            }
+        }
     }
 }
