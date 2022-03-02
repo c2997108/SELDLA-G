@@ -1043,11 +1043,11 @@ namespace SELDLA_G
                 }
                 if (tempNstart >= markFstart[0])
                 {
-                    drawRect(_spriteBatch, whiteRectangle, markFstart[0], tempNend - markFstart[0] + 1, Color.Red);
+                    drawRect(_spriteBatch, whiteRectangle, markFstart[0], tempNend - markFstart[0] + 1, Color.Orange);
                 }
                 else
                 {
-                    drawRect(_spriteBatch, whiteRectangle, tempNstart, markFend[0] - tempNstart + 1, Color.Red);
+                    drawRect(_spriteBatch, whiteRectangle, tempNstart, markFend[0] - tempNstart + 1, Color.Orange);
                 }
 
             }
@@ -1065,20 +1065,20 @@ namespace SELDLA_G
                 }
                 if (tempMstart1 >= markGstart1[0])
                 {
-                    drawRect(_spriteBatch, whiteRectangle, markGstart1[0], tempMend1 - markGstart1[0] + 1, Color.Red);
+                    drawRect(_spriteBatch, whiteRectangle, markGstart1[0], tempMend1 - markGstart1[0] + 1, Color.Orange);
                 }
                 else
                 {
-                    drawRect(_spriteBatch, whiteRectangle, tempMstart1, markGend1[0] - tempMstart1 + 1, Color.Red);
+                    drawRect(_spriteBatch, whiteRectangle, tempMstart1, markGend1[0] - tempMstart1 + 1, Color.Orange);
                 }
             }
             else if (markG == 2)
             {
-                drawRect(_spriteBatch, whiteRectangle, markGstart1[2], markGend1[2] - markGstart1[2] + 1, Color.Red);
+                drawRect(_spriteBatch, whiteRectangle, markGstart1[2], markGend1[2] - markGstart1[2] + 1, Color.Orange);
             }
             else if (markG == 3)
             {
-                drawRect(_spriteBatch, whiteRectangle, markGstart1[2], markGend1[2] - markGstart1[2] + 1, Color.Red);
+                drawRect(_spriteBatch, whiteRectangle, markGstart1[2], markGend1[2] - markGstart1[2] + 1, Color.Orange);
                 int tempMstart1 = -1;
                 int tempMend1 = -1;
                 for (int i = pos1.X; i < num_markers; i++)
@@ -1091,11 +1091,11 @@ namespace SELDLA_G
                 }
                 if (tempMstart1 >= markGstart2[0])
                 {
-                    drawRect(_spriteBatch, whiteRectangle, markGstart2[0], tempMend1 - markGstart2[0] + 1, Color.Red);
+                    drawRect(_spriteBatch, whiteRectangle, markGstart2[0], tempMend1 - markGstart2[0] + 1, Color.Orange);
                 }
                 else
                 {
-                    drawRect(_spriteBatch, whiteRectangle, tempMstart1, markGend2[0] - tempMstart1 + 1, Color.Red);
+                    drawRect(_spriteBatch, whiteRectangle, tempMstart1, markGend2[0] - tempMstart1 + 1, Color.Orange);
                 }
             }
             if (markN == 1)
@@ -1112,11 +1112,11 @@ namespace SELDLA_G
                 }
                 if (tempNstart >= markNstart[0])
                 {
-                    drawRect(_spriteBatch, whiteRectangle, markNstart[0],tempNend - markNstart[0] + 1,Color.Red);
+                    drawRect(_spriteBatch, whiteRectangle, markNstart[0],tempNend - markNstart[0] + 1,Color.Orange);
                 }
                 else
                 {
-                    drawRect(_spriteBatch, whiteRectangle, tempNstart,markNend[0] - tempNstart + 1,Color.Red);
+                    drawRect(_spriteBatch, whiteRectangle, tempNstart,markNend[0] - tempNstart + 1,Color.Orange);
                 }
 
             }
@@ -1134,18 +1134,18 @@ namespace SELDLA_G
                 }
                 if (tempMstart1 >= markMstart1[0])
                 {
-                    drawRect(_spriteBatch, whiteRectangle, markMstart1[0], tempMend1 - markMstart1[0] + 1, Color.Red);
+                    drawRect(_spriteBatch, whiteRectangle, markMstart1[0], tempMend1 - markMstart1[0] + 1, Color.Orange);
                 }
                 else
                 {
-                    drawRect(_spriteBatch, whiteRectangle, tempMstart1, markMend1[0] - tempMstart1 + 1, Color.Red);
+                    drawRect(_spriteBatch, whiteRectangle, tempMstart1, markMend1[0] - tempMstart1 + 1, Color.Orange);
                 }
             }else if(markM == 2)
             {
-                drawRect(_spriteBatch, whiteRectangle, markMstart1[2], markMend1[2] - markMstart1[2] + 1, Color.Red);
+                drawRect(_spriteBatch, whiteRectangle, markMstart1[2], markMend1[2] - markMstart1[2] + 1, Color.Orange);
             }else if(markM == 3)
             {
-                drawRect(_spriteBatch, whiteRectangle, markMstart1[2], markMend1[2] - markMstart1[2] + 1, Color.Red);
+                drawRect(_spriteBatch, whiteRectangle, markMstart1[2], markMend1[2] - markMstart1[2] + 1, Color.Orange);
                 int tempMstart1 = -1;
                 int tempMend1 = -1;
                 for (int i = pos1.X; i < num_markers; i++)
@@ -1158,11 +1158,11 @@ namespace SELDLA_G
                 }
                 if (tempMstart1 >= markMstart2[0])
                 {
-                    drawRect(_spriteBatch, whiteRectangle, markMstart2[0], tempMend1 - markMstart2[0] + 1, Color.Red);
+                    drawRect(_spriteBatch, whiteRectangle, markMstart2[0], tempMend1 - markMstart2[0] + 1, Color.Orange);
                 }
                 else
                 {
-                    drawRect(_spriteBatch, whiteRectangle, tempMstart1, markMend2[0] - tempMstart1 + 1, Color.Red);
+                    drawRect(_spriteBatch, whiteRectangle, tempMstart1, markMend2[0] - tempMstart1 + 1, Color.Orange);
                 }
             }
 
