@@ -10,10 +10,15 @@ https://github.com/c2997108/SELDLA-G/releases/download/v0.6.2/SELDLA-G_v0.6.2.zi
 
 ## 動作環境
 
-- Windows 10 or 11
-- Nvidia GT710以降のGPUでは確認済み (AMDやINDELの新しいGPUなら大丈夫かも。未確認。）
+### Windows 10 or 11
+- Nvidia GT710以降のGPUではGPUが使えるのを確認済み。AMDやINDELの新しいGPUなら大丈夫かも。未確認。
+- 連鎖解析モードはWindowsでGPUが使える環境を推奨。
 
-一応Linuxでも動作したけど、Macのarm版は今のところVisual Studioから出力できないのでM1 Macは対応できそうにない。
+### Mac
+- GPUは使えないのではないかなと思うけど、CPUでは動作を確認できた。
+
+### Linux
+- 一応CentOS7でも起動して、NvidiaのドライバーがあればGPUも使ってコンタクトマップ表示までは正常だけど、キー入力が変。
 
 ## 開発環境のセットアップ
 
