@@ -39,7 +39,7 @@ https://github.com/c2997108/SELDLA-G/releases/download/v0.6.2/SELDLA-G_v0.6.2.zi
 .\SELDLA-G.exe hic
 ```
 
-<img width="805" alt="image" src="https://user-images.githubusercontent.com/5350508/155942153-7c9ea304-7637-4c71-8136-f5d307e3d25b.png">
+<img width="618" alt="image" src="https://user-images.githubusercontent.com/5350508/156413938-06fed85e-5c3f-42c6-b348-007be7cfcd54.png">
 
 下記のキーを押して、読み込み、編集、保存を行う。
 
