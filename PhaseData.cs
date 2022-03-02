@@ -49,5 +49,6 @@ namespace SELDLA_G
         public int chrorigStartIndex = -1;
         public int chrorigEndIndex = -1;
         public int contigsize;
+        public int regionsize;
     }
 }

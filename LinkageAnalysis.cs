@@ -49,6 +49,14 @@ namespace SELDLA_G
         int[] markMend1 = new int[3];
         int[] markMstart2 = new int[3];
         int[] markMend2 = new int[3];
+        int markF = 0;
+        int[] markFstart = new int[3];
+        int[] markFend = new int[3];
+        int markG = 0;
+        int[] markGstart1 = new int[3];
+        int[] markGend1 = new int[3];
+        int[] markGstart2 = new int[3];
+        int[] markGend2 = new int[3];
         string savefileprefixname = "seldlag_output";
         int n_connect_length = 10000;
         Dictionary<string, string> seq = new Dictionary<string, string>();
@@ -620,6 +628,143 @@ namespace SELDLA_G
 
                 }
             }
+            if (state.IsKeyDown(Keys.F) && changing == false)
+            {
+                changing = true;
+                if (markF == 0)
+                {
+                    markF = 1;
+                    for (int i = pos1.X; i < num_markers; i++)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markFend[0] = i; } else { break; }
+                    }
+                    for (int i = pos1.X; i >= 0; i--)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markFstart[0] = i; } else { break; }
+                    }
+                }
+                else if (markF == 1)
+                {
+                    markF = 0;
+                    for (int i = pos1.X; i < num_markers; i++)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markFend[1] = i; } else { break; }
+                    }
+                    for (int i = pos1.X; i >= 0; i--)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markFstart[1] = i; } else { break; }
+                    }
+                    if (markFstart[0] < markFstart[1])
+                    {
+                        markFstart[2] = markFstart[0];
+                        markFend[2] = markFend[1];
+                    }
+                    else
+                    {
+                        markFstart[2] = markFstart[1];
+                        markFend[2] = markFend[0];
+                    }
+
+                    updateDistanceReverse(markFstart[2], markFend[2]);
+                    myphaseData = updatePhaseReverse(markFstart[2], markFend[2]);
+                    updatePhaseIndex();
+                    //calcMatchRate1line();
+                    setDistTexture();
+                }
+            }
+
+            if (state.IsKeyDown(Keys.G) && changing == false)
+            {
+                changing = true;
+                if (markG == 0)
+                {
+                    markG = 1;
+                    for (int i = pos1.X; i < num_markers; i++)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markGend1[0] = i; } else { break; }
+                    }
+                    for (int i = pos1.X; i >= 0; i--)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markGstart1[0] = i; } else { break; }
+                    }
+                }
+                else if (markG == 1)
+                {
+                    markG = 2;
+                    for (int i = pos1.X; i < num_markers; i++)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markGend1[1] = i; } else { break; }
+                    }
+                    for (int i = pos1.X; i >= 0; i--)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markGstart1[1] = i; } else { break; }
+                    }
+
+                    if (markGstart1[0] < markGstart1[1])
+                    {
+                        markGstart1[2] = markGstart1[0];
+                        markGend1[2] = markGend1[1];
+                    }
+                    else
+                    {
+                        markGstart1[2] = markGstart1[1];
+                        markGend1[2] = markGend1[0];
+                    }
+                }
+                else if (markG == 2)
+                {
+                    markG = 3;
+                    for (int i = pos1.X; i < num_markers; i++)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markGend2[0] = i; } else { break; }
+                    }
+                    for (int i = pos1.X; i >= 0; i--)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markGstart2[0] = i; } else { break; }
+                    }
+                }
+                else if (markG == 3)
+                {
+                    markG = 0;
+                    for (int i = pos1.X; i < num_markers; i++)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markGend2[1] = i; } else { break; }
+                    }
+                    for (int i = pos1.X; i >= 0; i--)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markGstart2[1] = i; } else { break; }
+                    }
+
+                    if (markGstart2[0] < markGstart2[1])
+                    {
+                        markGstart2[2] = markGstart2[0];
+                        markGend2[2] = markGend2[1];
+                    }
+                    else
+                    {
+                        markGstart2[2] = markGstart2[1];
+                        markGend2[2] = markGend2[0];
+                    }
+
+                    //1回目と2回目に選択した領域が入れ子になっていないことの確認
+                    if (!(markGstart1[2] >= markGstart2[2] && markGstart1[2] <= markGend2[2])
+                        && !(markGend1[2] >= markGstart2[2] && markGend1[2] <= markGend2[2])
+                        && !(markGstart2[2] >= markGstart1[2] && markGstart2[2] <= markGend1[2])
+                        && !(markGend2[2] >= markGstart1[2] && markGend2[2] <= markGend1[2]))
+                    {
+                        updateDistanceChange(markGstart1[2], markGend1[2], markGstart2[2], markGend2[2]);
+                        myphaseData = updatePhaseChange(markGstart1[2], markGend1[2], markGstart2[2], markGend2[2]);
+                        updatePhaseIndex();
+                        //calcMatchRate1line();
+                        setDistTexture();
+
+                    }
+                    else
+                    {
+                        Console.WriteLine("Error: Regions 1 and 2 overlap.");
+                    }
+                }
+            }
             if (state.IsKeyDown(Keys.N) && changing == false)
             {
                 changing = true;
@@ -886,7 +1031,76 @@ namespace SELDLA_G
             drawRect(_spriteBatch, whiteRectangle, pos2.chrStart, pos2.chrEnd - pos2.chrStart + 1, Color.Yellow);
             drawRect(_spriteBatch, whiteRectangle, pos2.contigStart, pos2.contigEnd - pos2.contigStart + 1, Color.Green);
 
-            if(markN == 1)
+            if (markF == 1)
+            {
+                int tempNstart = -1;
+                int tempNend = -1;
+                for (int i = pos1.X; i < num_markers; i++)
+                {
+                    if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { tempNend = i; } else { break; }
+                }
+                for (int i = pos1.X; i >= 0; i--)
+                {
+                    if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { tempNstart = i; } else { break; }
+                }
+                if (tempNstart >= markFstart[0])
+                {
+                    drawRect(_spriteBatch, whiteRectangle, markFstart[0], tempNend - markFstart[0] + 1, Color.Red);
+                }
+                else
+                {
+                    drawRect(_spriteBatch, whiteRectangle, tempNstart, markFend[0] - tempNstart + 1, Color.Red);
+                }
+
+            }
+            if (markG == 1)
+            {
+                int tempMstart1 = -1;
+                int tempMend1 = -1;
+                for (int i = pos1.X; i < num_markers; i++)
+                {
+                    if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { tempMend1 = i; } else { break; }
+                }
+                for (int i = pos1.X; i >= 0; i--)
+                {
+                    if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { tempMstart1 = i; } else { break; }
+                }
+                if (tempMstart1 >= markGstart1[0])
+                {
+                    drawRect(_spriteBatch, whiteRectangle, markGstart1[0], tempMend1 - markGstart1[0] + 1, Color.Red);
+                }
+                else
+                {
+                    drawRect(_spriteBatch, whiteRectangle, tempMstart1, markGend1[0] - tempMstart1 + 1, Color.Red);
+                }
+            }
+            else if (markG == 2)
+            {
+                drawRect(_spriteBatch, whiteRectangle, markGstart1[2], markGend1[2] - markGstart1[2] + 1, Color.Red);
+            }
+            else if (markG == 3)
+            {
+                drawRect(_spriteBatch, whiteRectangle, markGstart1[2], markGend1[2] - markGstart1[2] + 1, Color.Red);
+                int tempMstart1 = -1;
+                int tempMend1 = -1;
+                for (int i = pos1.X; i < num_markers; i++)
+                {
+                    if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { tempMend1 = i; } else { break; }
+                }
+                for (int i = pos1.X; i >= 0; i--)
+                {
+                    if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { tempMstart1 = i; } else { break; }
+                }
+                if (tempMstart1 >= markGstart2[0])
+                {
+                    drawRect(_spriteBatch, whiteRectangle, markGstart2[0], tempMend1 - markGstart2[0] + 1, Color.Red);
+                }
+                else
+                {
+                    drawRect(_spriteBatch, whiteRectangle, tempMstart1, markGend2[0] - tempMstart1 + 1, Color.Red);
+                }
+            }
+            if (markN == 1)
             {
                 int tempNstart = -1;
                 int tempNend = -1;

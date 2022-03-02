@@ -49,6 +49,14 @@ namespace SELDLA_G
         int[] markMend1 = new int[3];
         int[] markMstart2 = new int[3];
         int[] markMend2 = new int[3];
+        int markF = 0;
+        int[] markFstart = new int[3];
+        int[] markFend = new int[3];
+        int markG = 0;
+        int[] markGstart1 = new int[3];
+        int[] markGend1 = new int[3];
+        int[] markGstart2 = new int[3];
+        int[] markGend2 = new int[3];
         string savefileprefixname = "hic_output";
         int n_connect_length = 10000;
         Dictionary<string, string> seq = new Dictionary<string, string>();
@@ -59,11 +67,13 @@ namespace SELDLA_G
         int blocksize = 100 * 1000;
         string fileSeq = "assembly.cleaned.fasta";
         //string fileSeq = "../../../cl0.92_sp0.90_ex0.60_split_seq.txt";
-        string fileAGP = "scaffolds_FINAL.agp";
+        //string fileAGP = "scaffolds_FINAL.agp";
+        string fileAGP = "tombo0302.agp";
         string fileBED = "alignment_iteration_1.bed";
-        string fileCalculated = "hic_output.matrix";
+        //string fileCalculated = "hic_output.matrix";
+        string fileCalculated = "tombo0302.matrix";
         int[,] countmatrix;
-        int color_fold = 10;
+        int color_fold = 3;
 
 
         public HiCAnalysis()
@@ -136,6 +146,14 @@ namespace SELDLA_G
                     tempphase.chrorigStartIndex = tempstart;
                     tempphase.chrorigEndIndex = tempend;
                     tempphase.contigsize = contig.end_bp - contig.start_bp + 1;
+                    if ((j+1) * blocksize < tempphase.contigsize)
+                    {
+                        tempphase.regionsize = blocksize;
+                    }
+                    else
+                    {
+                        tempphase.regionsize = tempphase.contigsize - j * blocksize;
+                    }
                     myphaseData.Add(tempphase);
                 }
             });
@@ -206,7 +224,7 @@ namespace SELDLA_G
                 Enumerable.Range(0, myphaseData.Count - 1).ToList().ForEach(j => {
                     if (countmatrix[i, j] > 0)
                     {
-                        distphase3[i, j] = ((float)(Math.Log(countmatrix[i, j], 10) / Math.Log(maxcount, 10)));
+                        distphase3[i, j] = ((float)(Math.Log(countmatrix[i, j] * (blocksize / (float)myphaseData[i].regionsize) * (blocksize / (float)myphaseData[j].regionsize), 10) / Math.Log(maxcount, 10)));
                         if (distphase3[i, j] > 1) distphase3[i, j] = 1;
                     }
 
@@ -251,7 +269,7 @@ namespace SELDLA_G
                 Enumerable.Range(0, myphaseData.Count - 1).ToList().ForEach(j => {
                     if (countmatrix[i, j] > 0)
                     {
-                        distphase3[i, j] = ((float)(Math.Log(countmatrix[i, j], 10) / Math.Log(maxcount, 10)));
+                        distphase3[i, j] = ((float)(Math.Log(countmatrix[i, j] * (blocksize / (float)myphaseData[i].regionsize) * (blocksize / (float)myphaseData[j].regionsize), 10) / Math.Log(maxcount, 10)));
                         if (distphase3[i, j] > 1) distphase3[i, j] = 1;
                     }
 
@@ -311,7 +329,8 @@ namespace SELDLA_G
             whiteRectangle = new Texture2D(GraphicsDevice, 1, 1);
             whiteRectangle.SetData(new[] { Color.White });
 
-            openFileBED(fileAGP, fileBED);
+            //openFileBED(fileAGP, fileBED);
+            openFileCalculated(fileAGP, fileCalculated);
 
             texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
             setDistTexture();
@@ -450,6 +469,143 @@ namespace SELDLA_G
                     //calcMatchRate1line();
                     setDistTexture();
 
+                }
+            }
+            if (state.IsKeyDown(Keys.F) && changing == false)
+            {
+                changing = true;
+                if (markF == 0)
+                {
+                    markF = 1;
+                    for (int i = pos1.X; i < num_markers; i++)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markFend[0] = i; } else { break; }
+                    }
+                    for (int i = pos1.X; i >= 0; i--)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markFstart[0] = i; } else { break; }
+                    }
+                }
+                else if (markF == 1)
+                {
+                    markF = 0;
+                    for (int i = pos1.X; i < num_markers; i++)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markFend[1] = i; } else { break; }
+                    }
+                    for (int i = pos1.X; i >= 0; i--)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markFstart[1] = i; } else { break; }
+                    }
+                    if (markFstart[0] < markFstart[1])
+                    {
+                        markFstart[2] = markFstart[0];
+                        markFend[2] = markFend[1];
+                    }
+                    else
+                    {
+                        markFstart[2] = markFstart[1];
+                        markFend[2] = markFend[0];
+                    }
+
+                    updateDistanceReverse(markFstart[2], markFend[2]);
+                    myphaseData = updatePhaseReverse(markFstart[2], markFend[2]);
+                    updatePhaseIndex();
+                    //calcMatchRate1line();
+                    setDistTexture();
+                }
+            }
+
+            if (state.IsKeyDown(Keys.G) && changing == false)
+            {
+                changing = true;
+                if (markG == 0)
+                {
+                    markG = 1;
+                    for (int i = pos1.X; i < num_markers; i++)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markGend1[0] = i; } else { break; }
+                    }
+                    for (int i = pos1.X; i >= 0; i--)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markGstart1[0] = i; } else { break; }
+                    }
+                }
+                else if (markG == 1)
+                {
+                    markG = 2;
+                    for (int i = pos1.X; i < num_markers; i++)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markGend1[1] = i; } else { break; }
+                    }
+                    for (int i = pos1.X; i >= 0; i--)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markGstart1[1] = i; } else { break; }
+                    }
+
+                    if (markGstart1[0] < markGstart1[1])
+                    {
+                        markGstart1[2] = markGstart1[0];
+                        markGend1[2] = markGend1[1];
+                    }
+                    else
+                    {
+                        markGstart1[2] = markGstart1[1];
+                        markGend1[2] = markGend1[0];
+                    }
+                }
+                else if (markG == 2)
+                {
+                    markG = 3;
+                    for (int i = pos1.X; i < num_markers; i++)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markGend2[0] = i; } else { break; }
+                    }
+                    for (int i = pos1.X; i >= 0; i--)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markGstart2[0] = i; } else { break; }
+                    }
+                }
+                else if (markG == 3)
+                {
+                    markG = 0;
+                    for (int i = pos1.X; i < num_markers; i++)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markGend2[1] = i; } else { break; }
+                    }
+                    for (int i = pos1.X; i >= 0; i--)
+                    {
+                        if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { markGstart2[1] = i; } else { break; }
+                    }
+
+                    if (markGstart2[0] < markGstart2[1])
+                    {
+                        markGstart2[2] = markGstart2[0];
+                        markGend2[2] = markGend2[1];
+                    }
+                    else
+                    {
+                        markGstart2[2] = markGstart2[1];
+                        markGend2[2] = markGend2[0];
+                    }
+
+                    //1回目と2回目に選択した領域が入れ子になっていないことの確認
+                    if (!(markGstart1[2] >= markGstart2[2] && markGstart1[2] <= markGend2[2])
+                        && !(markGend1[2] >= markGstart2[2] && markGend1[2] <= markGend2[2])
+                        && !(markGstart2[2] >= markGstart1[2] && markGstart2[2] <= markGend1[2])
+                        && !(markGend2[2] >= markGstart1[2] && markGend2[2] <= markGend1[2]))
+                    {
+                        updateDistanceChange(markGstart1[2], markGend1[2], markGstart2[2], markGend2[2]);
+                        myphaseData = updatePhaseChange(markGstart1[2], markGend1[2], markGstart2[2], markGend2[2]);
+                        updatePhaseIndex();
+                        //calcMatchRate1line();
+                        setDistTexture();
+
+                    }
+                    else
+                    {
+                        Console.WriteLine("Error: Regions 1 and 2 overlap.");
+                    }
                 }
             }
             if (state.IsKeyDown(Keys.N) && changing == false)
@@ -757,7 +913,76 @@ namespace SELDLA_G
             drawRect(_spriteBatch, whiteRectangle, pos2.chrStart, pos2.chrEnd - pos2.chrStart + 1, Color.Yellow);
             drawRect(_spriteBatch, whiteRectangle, pos2.contigStart, pos2.contigEnd - pos2.contigStart + 1, Color.Green);
 
-            if(markN == 1)
+            if (markF == 1)
+            {
+                int tempNstart = -1;
+                int tempNend = -1;
+                for (int i = pos1.X; i < num_markers; i++)
+                {
+                    if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { tempNend = i; } else { break; }
+                }
+                for (int i = pos1.X; i >= 0; i--)
+                {
+                    if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { tempNstart = i; } else { break; }
+                }
+                if (tempNstart >= markFstart[0])
+                {
+                    drawRect(_spriteBatch, whiteRectangle, markFstart[0], tempNend - markFstart[0] + 1, Color.Red);
+                }
+                else
+                {
+                    drawRect(_spriteBatch, whiteRectangle, tempNstart, markFend[0] - tempNstart + 1, Color.Red);
+                }
+
+            }
+            if (markG == 1)
+            {
+                int tempMstart1 = -1;
+                int tempMend1 = -1;
+                for (int i = pos1.X; i < num_markers; i++)
+                {
+                    if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { tempMend1 = i; } else { break; }
+                }
+                for (int i = pos1.X; i >= 0; i--)
+                {
+                    if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { tempMstart1 = i; } else { break; }
+                }
+                if (tempMstart1 >= markGstart1[0])
+                {
+                    drawRect(_spriteBatch, whiteRectangle, markGstart1[0], tempMend1 - markGstart1[0] + 1, Color.Red);
+                }
+                else
+                {
+                    drawRect(_spriteBatch, whiteRectangle, tempMstart1, markGend1[0] - tempMstart1 + 1, Color.Red);
+                }
+            }
+            else if (markG == 2)
+            {
+                drawRect(_spriteBatch, whiteRectangle, markGstart1[2], markGend1[2] - markGstart1[2] + 1, Color.Red);
+            }
+            else if (markG == 3)
+            {
+                drawRect(_spriteBatch, whiteRectangle, markGstart1[2], markGend1[2] - markGstart1[2] + 1, Color.Red);
+                int tempMstart1 = -1;
+                int tempMend1 = -1;
+                for (int i = pos1.X; i < num_markers; i++)
+                {
+                    if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { tempMend1 = i; } else { break; }
+                }
+                for (int i = pos1.X; i >= 0; i--)
+                {
+                    if (myphaseData[i].chr2nd == myphaseData[pos1.X].chr2nd) { tempMstart1 = i; } else { break; }
+                }
+                if (tempMstart1 >= markGstart2[0])
+                {
+                    drawRect(_spriteBatch, whiteRectangle, markGstart2[0], tempMend1 - markGstart2[0] + 1, Color.Red);
+                }
+                else
+                {
+                    drawRect(_spriteBatch, whiteRectangle, tempMstart1, markGend2[0] - tempMstart1 + 1, Color.Red);
+                }
+            }
+            if (markN == 1)
             {
                 int tempNstart = -1;
                 int tempNend = -1;
@@ -1277,16 +1502,34 @@ namespace SELDLA_G
         void updateDistanceDelete(int areaStart, int areaEnd)
         {
             float[,] tempdistphase3 = new float[num_markers - (areaEnd - areaStart + 1), num_markers - (areaEnd - areaStart + 1)];
+            int[,] tempcountmatrix = new int[num_markers - (areaEnd - areaStart + 1), num_markers - (areaEnd - areaStart + 1)];
 
             System.Threading.Tasks.Parallel.For(0, areaStart, j => {
-                for (int i = 0; i < areaStart; i++) tempdistphase3[i, j] = distphase3[i, j];
-                for (int i = areaEnd + 1; i < num_markers; i++) tempdistphase3[i - (areaEnd - areaStart + 1), j] = distphase3[i, j];
+                for (int i = 0; i < areaStart; i++)
+                {
+                    tempdistphase3[i, j] = distphase3[i, j];
+                    tempcountmatrix[i, j] = countmatrix[i, j];
+                }
+                for (int i = areaEnd + 1; i < num_markers; i++)
+                {
+                    tempdistphase3[i - (areaEnd - areaStart + 1), j] = distphase3[i, j];
+                    tempcountmatrix[i - (areaEnd - areaStart + 1), j] = countmatrix[i, j];
+                }
             });
             System.Threading.Tasks.Parallel.For(areaEnd+1, num_markers, j => {
-                for (int i = 0; i < areaStart; i++) tempdistphase3[i, j - (areaEnd - areaStart + 1)] = distphase3[i, j];
-                for (int i = areaEnd + 1; i < num_markers; i++) tempdistphase3[i - (areaEnd - areaStart + 1), j - (areaEnd - areaStart + 1)] = distphase3[i, j];
+                for (int i = 0; i < areaStart; i++)
+                {
+                    tempdistphase3[i, j - (areaEnd - areaStart + 1)] = distphase3[i, j];
+                    tempcountmatrix[i, j - (areaEnd - areaStart + 1)] = countmatrix[i, j];
+                }
+                for (int i = areaEnd + 1; i < num_markers; i++)
+                {
+                    tempdistphase3[i - (areaEnd - areaStart + 1), j - (areaEnd - areaStart + 1)] = distphase3[i, j];
+                    tempcountmatrix[i - (areaEnd - areaStart + 1), j - (areaEnd - areaStart + 1)] = countmatrix[i, j];
+                }
             });
             distphase3 = tempdistphase3;
+            countmatrix = tempcountmatrix;
             num_markers = num_markers - (areaEnd - areaStart + 1);
             texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
         }
@@ -1332,20 +1575,28 @@ namespace SELDLA_G
         {
             System.Threading.Tasks.Parallel.For(0, num_markers, j => {
                 float tempf = -1;
+                int tempf2 = -1;
                 for (int i = areaStart; i <= areaStart + (areaEnd - areaStart) / 2; i++)
                 {
                     tempf = distphase3[i, j];
                     distphase3[i, j] = distphase3[(areaEnd - (i - areaStart)), j];
                     distphase3[(areaEnd - (i - areaStart)), j] = tempf;
+                    tempf2 = countmatrix[i, j];
+                    countmatrix[i, j] = countmatrix[(areaEnd - (i - areaStart)), j];
+                    countmatrix[(areaEnd - (i - areaStart)), j] = tempf2;
                 }
             });
             System.Threading.Tasks.Parallel.For(0, num_markers, j => {
                 float tempf = -1;
+                int tempf2 = -1;
                 for (int i = areaStart; i <= areaStart + (areaEnd - areaStart) / 2; i++)
                 {
                     tempf = distphase3[j, i];
                     distphase3[j, i] = distphase3[j, (areaEnd - (i - areaStart))];
                     distphase3[j, (areaEnd - (i - areaStart))] = tempf;
+                    tempf2 = countmatrix[j, i];
+                    countmatrix[j, i] = countmatrix[j, (areaEnd - (i - areaStart))];
+                    countmatrix[j, (areaEnd - (i - areaStart))] = tempf2;
                 }
             });
         }
@@ -1389,6 +1640,7 @@ namespace SELDLA_G
         {
             System.Threading.Tasks.Parallel.For(0, num_markers, k => {
                 float[] tempfa = new float[num_markers];
+                int[] tempfa2 = new int[num_markers];
                 bool flag = true;
                 bool flag2 = true;
                 int tempindex = -1;
@@ -1398,6 +1650,7 @@ namespace SELDLA_G
                     {
                         tempindex++;
                         tempfa[tempindex] = distphase3[i, k];
+                        tempfa2[tempindex] = countmatrix[i, k];
                     }
                     else if (flag == true && i >= area1Start && i <= area1End)
                     {
@@ -1408,6 +1661,7 @@ namespace SELDLA_G
                             {
                                 tempindex++;
                                 tempfa[tempindex] = distphase3[j, k];
+                                tempfa2[tempindex] = countmatrix[j, k];
                             }
                         }
                     }
@@ -1420,6 +1674,7 @@ namespace SELDLA_G
                             {
                                 tempindex++;
                                 tempfa[tempindex] = distphase3[j, k];
+                                tempfa2[tempindex] = countmatrix[j, k];
                             }
                         }
                     }
@@ -1427,10 +1682,12 @@ namespace SELDLA_G
                 for (int i = 0; i < num_markers; i++)
                 {
                     distphase3[i, k] = tempfa[i];
+                    countmatrix[i, k] = tempfa2[i];
                 }
             });
             System.Threading.Tasks.Parallel.For(0, num_markers, k => {
                 float[] tempfa = new float[num_markers];
+                int[] tempfa2 = new int[num_markers];
                 bool flag = true;
                 bool flag2 = true;
                 int tempindex = -1;
@@ -1440,6 +1697,7 @@ namespace SELDLA_G
                     {
                         tempindex++;
                         tempfa[tempindex] = distphase3[k, i];
+                        tempfa2[tempindex] = countmatrix[k, i];
                     }
                     else if (flag == true && i >= area1Start && i <= area1End)
                     {
@@ -1450,6 +1708,7 @@ namespace SELDLA_G
                             {
                                 tempindex++;
                                 tempfa[tempindex] = distphase3[k, j];
+                                tempfa2[tempindex] = countmatrix[k, j];
                             }
                         }
                     }
@@ -1462,6 +1721,7 @@ namespace SELDLA_G
                             {
                                 tempindex++;
                                 tempfa[tempindex] = distphase3[k, j];
+                                tempfa2[tempindex] = countmatrix[k, j];
                             }
                         }
                     }
@@ -1469,6 +1729,7 @@ namespace SELDLA_G
                 for (int i = 0; i < num_markers; i++)
                 {
                     distphase3[k, i] = tempfa[i];
+                    countmatrix[k, i] = tempfa2[i];
                 }
             });
 
