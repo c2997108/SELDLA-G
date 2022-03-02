@@ -22,6 +22,18 @@ https://github.com/c2997108/SELDLA-G/releases/download/v0.6.2/SELDLA-G_v0.6.2.zi
 
 ## 使用方法
 
+### 連鎖解析モード
+
+```
+.\SELDLA-G.exe linkage
+```
+
+### Hi-Cモード
+
+```
+.\SELDLA-G.exe hic
+```
+
 <img width="805" alt="image" src="https://user-images.githubusercontent.com/5350508/155942153-7c9ea304-7637-4c71-8136-f5d307e3d25b.png">
 
 下記のキーを押して、読み込み、編集、保存を行う。
