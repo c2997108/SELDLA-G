@@ -448,10 +448,6 @@ namespace SELDLA_G
             // Poll for current keyboard state
             KeyboardState state = Keyboard.GetState();
 
-            // If they hit esc, exit
-            //if (state.IsKeyDown(Keys.Escape))
-            //    Exit();
-
             // Print to debug console currently pressed keys
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
             foreach (var key in state.GetPressedKeys())
