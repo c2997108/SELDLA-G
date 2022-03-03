@@ -650,6 +650,7 @@ namespace SELDLA_G
                     num_markers = myphaseData.Count;
                     texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
                     savedmyphaseData = new List<PhaseData>();
+                    tempsavedata();
                     setDistTexture();
                 }
             }
