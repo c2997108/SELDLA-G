@@ -73,6 +73,7 @@ namespace SELDLA_G
         List<PhaseData> backmyphaseData = new List<PhaseData>();
         float[,] saveddistphase3;
         List<PhaseData> savedmyphaseData = new List<PhaseData>();
+        int colorvari = 1; //1: black, 2:white
 
 
         public LinkageAnalysis()
@@ -1149,7 +1150,21 @@ namespace SELDLA_G
                 if (str != "") { fileSeq = str; }
 
                 openseq(fileSeq);
-                
+
+            }
+            if (state.IsKeyDown(Keys.H) && changing == false)
+            {
+                changing = true;
+
+                if(colorvari == 1)
+                {
+                    colorvari = 2;
+                }
+                else
+                {
+                    colorvari = 1;
+                }
+                setDistTexture();
             }
 
 
@@ -1989,11 +2004,16 @@ namespace SELDLA_G
             {
                 for (int j = 0; j < num_markers; j++)
                 {
-                    //背景白
-                    dataColors[i * num_markers + j] = new Color(255, (int)(255 * (1 - distphase3[i, j])), (int)(255 * (1 - distphase3[i, j])));
-                    //背景黒
-                    //dataColors[i * num_markers + j] = new Color((int)(255 * distphase3[i, j]), 0, 0);
-
+                    if(colorvari == 1)
+                    {
+                        //背景黒
+                        dataColors[i * num_markers + j] = new Color((int)(255 * distphase3[i, j]), 0, 0);
+                    }
+                    else
+                    {
+                        //背景白
+                        dataColors[i * num_markers + j] = new Color(255, (int)(255 * (1 - distphase3[i, j])), (int)(255 * (1 - distphase3[i, j])));
+                    }
                 }
             }
             texture.SetData(dataColors);

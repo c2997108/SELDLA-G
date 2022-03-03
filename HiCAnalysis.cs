@@ -81,6 +81,7 @@ namespace SELDLA_G
         float[,] saveddistphase3;
         int[,] savedcountmatrix;
         List<PhaseData> savedmyphaseData = new List<PhaseData>();
+        int colorvari = 1; //1: black, 2:white
 
 
         public HiCAnalysis()
@@ -1027,7 +1028,21 @@ namespace SELDLA_G
                 if (str != "") { fileSeq = str; }
 
                 openseq(fileSeq);
-                
+
+            }
+            if (state.IsKeyDown(Keys.H) && changing == false)
+            {
+                changing = true;
+
+                if (colorvari == 1)
+                {
+                    colorvari = 2;
+                }
+                else
+                {
+                    colorvari = 1;
+                }
+                setDistTexture();
             }
 
             if (state.IsKeyDown(Keys.B) && changing == false)
@@ -1892,11 +1907,16 @@ namespace SELDLA_G
                 {
                     tempcol = (int)(color_fold * (255 * distphase3[i, j]));
                     if (tempcol > 255) tempcol = 255;
-                    //背景白
-                    dataColors[i * num_markers + j] = new Color(255, (int)(255 - tempcol), (int)(255 - tempcol));
-                    //背景黒
-                    //dataColors[i * num_markers + j] = new Color(tempcol, 0, 0);
-
+                    if (colorvari == 1)
+                    {
+                        //背景黒
+                        dataColors[i * num_markers + j] = new Color(tempcol, 0, 0);
+                    }
+                    else
+                    {
+                        //背景白
+                        dataColors[i * num_markers + j] = new Color(255, (int)(255 - tempcol), (int)(255 - tempcol));
+                    }
                 }
             }
             texture.SetData(dataColors);
