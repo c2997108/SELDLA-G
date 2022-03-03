@@ -74,10 +74,13 @@ namespace SELDLA_G
         //string fileCalculated = "hic_output.matrix";
         string fileCalculated = "tombo0302.matrix";
         int[,] countmatrix;
-        int color_fold = 3;
+        float color_fold = 3;
         float[,] backdistphase3;
         int[,] backcountmatrix;
-        List<PhaseData> backmyphaseData;
+        List<PhaseData> backmyphaseData = new List<PhaseData>();
+        float[,] saveddistphase3;
+        int[,] savedcountmatrix;
+        List<PhaseData> savedmyphaseData = new List<PhaseData>();
 
 
         public HiCAnalysis()
@@ -365,6 +368,16 @@ namespace SELDLA_G
                 backmyphaseData.Add(myphaseData[i].DeepCopy());
             }
         }
+        void tempsavedata()
+        {
+            saveddistphase3 = distphase3.Clone() as float[,];
+            savedcountmatrix = countmatrix.Clone() as int[,];
+            savedmyphaseData = new List<PhaseData>();
+            for (int i = 0; i < myphaseData.Count; i++)
+            {
+                savedmyphaseData.Add(myphaseData[i].DeepCopy());
+            }
+        }
         protected override void Update(GameTime gameTime)
         {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
@@ -463,7 +476,30 @@ namespace SELDLA_G
                     myphaseData = backmyphaseData;
                     countmatrix = backcountmatrix;
                     distphase3 = backdistphase3;
+                    num_markers = myphaseData.Count;
+                    texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
                     backmyphaseData = new List<PhaseData>();
+                    setDistTexture();
+                }
+            }
+            if (state.IsKeyDown(Keys.C) && changing == false)
+            {
+                changing = true;
+
+                tempsavedata();
+            }
+            if (state.IsKeyDown(Keys.V) && changing == false)
+            {
+                changing = true;
+
+                if (savedmyphaseData.Count > 0)
+                {
+                    myphaseData = savedmyphaseData;
+                    countmatrix = backcountmatrix;
+                    distphase3 = saveddistphase3;
+                    num_markers = myphaseData.Count;
+                    texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
+                    savedmyphaseData = new List<PhaseData>();
                     setDistTexture();
                 }
             }
@@ -993,7 +1029,6 @@ namespace SELDLA_G
                 var str = Console.ReadLine();
                 if (str != "") { fileSeq = str; }
 
-                backupdata();
                 openseq(fileSeq);
                 
             }
@@ -1005,7 +1040,7 @@ namespace SELDLA_G
                 Console.WriteLine("Current color intensity amplification: " + color_fold + "");
                 Console.WriteLine("Enter new color intensity. [" + color_fold + "]");
                 var str = Console.ReadLine();
-                if (str != "") { color_fold = int.Parse(str); }
+                if (str != "") { color_fold = float.Parse(str); }
 
                 setDistTexture();
 
@@ -1858,10 +1893,10 @@ namespace SELDLA_G
             {
                 for (int j = 0; j < num_markers; j++)
                 {
-                    tempcol = color_fold * (int)(255 * distphase3[i, j]);
+                    tempcol = (int)(color_fold * (255 * distphase3[i, j]));
                     if (tempcol > 255) tempcol = 255;
                     //背景白
-                    dataColors[i * num_markers + j] = new Color(255, (int)(255 * (1 - tempcol)), (int)(255 * (1 - tempcol)));
+                    dataColors[i * num_markers + j] = new Color(255, (int)(255 - tempcol), (int)(255 - tempcol));
                     //背景黒
                     //dataColors[i * num_markers + j] = new Color(tempcol, 0, 0);
 

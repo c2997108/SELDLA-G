@@ -70,7 +70,9 @@ namespace SELDLA_G
         //string filePhase = "../../../seldla2nd_chain.ld2imp.all.txt";
         //string filePhase = "../../../seldla2nd_chain.ph.all.txt";
         float[,] backdistphase3;
-        List<PhaseData> backmyphaseData;
+        List<PhaseData> backmyphaseData = new List<PhaseData>();
+        float[,] saveddistphase3;
+        List<PhaseData> savedmyphaseData = new List<PhaseData>();
 
 
         public LinkageAnalysis()
@@ -519,6 +521,15 @@ namespace SELDLA_G
                 backmyphaseData.Add(myphaseData[i].DeepCopy());
             }
         }
+        void tempsavedata()
+        {
+            saveddistphase3 = distphase3.Clone() as float[,];
+            savedmyphaseData = new List<PhaseData>();
+            for (int i = 0; i < myphaseData.Count; i++)
+            {
+                savedmyphaseData.Add(myphaseData[i].DeepCopy());
+            }
+        }
         protected override void Update(GameTime gameTime)
         {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
@@ -616,7 +627,29 @@ namespace SELDLA_G
                 {
                     myphaseData = backmyphaseData;
                     distphase3 = backdistphase3;
+                    num_markers = myphaseData.Count;
+                    texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
                     backmyphaseData = new List<PhaseData>();
+                    setDistTexture();
+                }
+            }
+            if (state.IsKeyDown(Keys.C) && changing == false)
+            {
+                changing = true;
+
+                tempsavedata();
+            }
+            if (state.IsKeyDown(Keys.V) && changing == false)
+            {
+                changing = true;
+
+                if (savedmyphaseData.Count > 0)
+                {
+                    myphaseData = savedmyphaseData;
+                    distphase3 = saveddistphase3;
+                    num_markers = myphaseData.Count;
+                    texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
+                    savedmyphaseData = new List<PhaseData>();
                     setDistTexture();
                 }
             }
@@ -1118,7 +1151,6 @@ namespace SELDLA_G
                 var str = Console.ReadLine();
                 if (str != "") { fileSeq = str; }
 
-                backupdata();
                 openseq(fileSeq);
                 
             }
