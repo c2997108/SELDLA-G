@@ -73,7 +73,7 @@ namespace SELDLA_G
         List<PhaseData> backmyphaseData = new List<PhaseData>();
         float[,] saveddistphase3;
         List<PhaseData> savedmyphaseData = new List<PhaseData>();
-        int colorvari = 1; //1: black, 2:white
+        int colorvari = 2; //1: black, 2:white
 
 
         public LinkageAnalysis()
@@ -1181,9 +1181,17 @@ namespace SELDLA_G
             _spriteBatch.Begin();
             _spriteBatch.Draw(texture, new Vector2((float)worldX, (float)worldY), null, Color.White, 0.0f, Vector2.Zero, new Vector2((float)worldW, (float)worldW), SpriteEffects.None, 0.0f);
 
-            drawRect(_spriteBatch, whiteRectangle, pos1.chrStart, pos1.chrEnd - pos1.chrStart + 1, Color.LightBlue);
+            if(colorvari == 1)
+            {
+                drawRect(_spriteBatch, whiteRectangle, pos1.chrStart, pos1.chrEnd - pos1.chrStart + 1, Color.Yellow);
+                drawRect(_spriteBatch, whiteRectangle, pos2.chrStart, pos2.chrEnd - pos2.chrStart + 1, Color.Yellow);
+            }
+            else
+            {
+                drawRect(_spriteBatch, whiteRectangle, pos1.chrStart, pos1.chrEnd - pos1.chrStart + 1, Color.Blue);
+                drawRect(_spriteBatch, whiteRectangle, pos2.chrStart, pos2.chrEnd - pos2.chrStart + 1, Color.Blue);
+            }
             drawRect(_spriteBatch, whiteRectangle, pos1.contigStart, pos1.contigEnd - pos1.contigStart + 1, Color.LightGreen);
-            drawRect(_spriteBatch, whiteRectangle, pos2.chrStart, pos2.chrEnd - pos2.chrStart + 1, Color.LightBlue);
             drawRect(_spriteBatch, whiteRectangle, pos2.contigStart, pos2.contigEnd - pos2.contigStart + 1, Color.LightGreen);
 
             if (markF == 1)

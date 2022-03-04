@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "SELDLA-G": {
+      "commandName": "Project"
+    },
+    "SELDLA-G_HiC": {
+      "commandName": "Project",
+      "commandLineArgs": "hic"
+    }
+  }
+}

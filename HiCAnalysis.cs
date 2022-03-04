@@ -66,11 +66,14 @@ namespace SELDLA_G
         Dictionary<string, Dictionary<int, int>> posToIndex = new Dictionary<string, Dictionary<int, int>>();
         int blocksize = 100 * 1000;
         string fileSeq = "assembly.cleaned.fasta";
+        //string fileSeq = @"E:\download\assembly.cleaned.fasta";
         //string fileSeq = "../../../cl0.92_sp0.90_ex0.60_split_seq.txt";
         //string fileAGP = "scaffolds_FINAL.agp";
         string fileAGP = "demo_tombo.agp";
+        //string fileAGP = @"E:\download\scaffolds_FINAL.agp";
         //string fileBED = "alignment_iteration_1.bed";
         string fileBED = "demo_tombo.bed";
+        //string fileBED = @"E:\download\alignment_iteration_1.bed";
         //string fileCalculated = "hic_output.matrix";
         string fileCalculated = "tombo0302.matrix";
         int[,] countmatrix;
@@ -81,7 +84,8 @@ namespace SELDLA_G
         float[,] saveddistphase3;
         int[,] savedcountmatrix;
         List<PhaseData> savedmyphaseData = new List<PhaseData>();
-        int colorvari = 1; //1: black, 2:white
+        int colorvari = 2; //1: black, 2:white
+        int limit_short_contig_length = 10*1000;
 
 
         public HiCAnalysis()
@@ -108,64 +112,69 @@ namespace SELDLA_G
                 tempcontig.end_bp = Int32.Parse(items[2]);
                 return tempcontig;
             }).ToList();
-            Console.WriteLine(contigPositions.Count);
+            Console.WriteLine("Total contigs: " + contigPositions.Count);
 
             posToIndex = new Dictionary<string, Dictionary<int, int>>();
             myphaseData = new List<PhaseData>();
             var chrStartIndex = new Dictionary<string, int>();
             int i = -1;
+            int i2 = -1;
             contigPositions.ForEach(contig =>
             {
-                i++;
                 int contigsize = contig.end_bp - contig.start_bp + 1;
-                int tempstart = i;
-                int tempend = i + (int)((contigsize - 1) / blocksize);
-                i = tempend;
-                if (!chrStartIndex.ContainsKey(contig.chrname)) chrStartIndex.Add(contig.chrname, tempstart);
-                if (!posToIndex.ContainsKey(contig.contigname))
+                if(contigsize >= limit_short_contig_length)
                 {
-                    posToIndex.Add(contig.contigname, new Dictionary<int, int>());
-                    for (int j = 0; j < contigsize / (float)blocksize; j++)
+                    i2++;
+                    i++;
+                    int tempstart = i;
+                    int tempend = i + (int)((contigsize - 1) / blocksize);
+                    i = tempend;
+                    if (!chrStartIndex.ContainsKey(contig.chrname)) chrStartIndex.Add(contig.chrname, tempstart);
+                    if (!posToIndex.ContainsKey(contig.contigname))
                     {
+                        posToIndex.Add(contig.contigname, new Dictionary<int, int>());
+                        for (int j = 0; j < contigsize / (float)blocksize; j++)
+                        {
+                            if (contig.orientation == "+")
+                            {
+                                posToIndex[contig.contigname].Add(j, tempstart + j);
+                            }
+                            else
+                            {
+                                posToIndex[contig.contigname].Add(j, tempstart + (contigsize - 1) / blocksize - j);
+                            }
+                        }
+                    }
+                    for (int j = 0; j < (contigsize) / (float)blocksize; j++)
+                    {
+                        PhaseData tempphase = new PhaseData();
+                        tempphase.chr2nd = contig.chrname;
+                        tempphase.chrorig = contig.contigname;
+                        tempphase.chrorient = contig.orientation;
                         if (contig.orientation == "+")
                         {
-                            posToIndex[contig.contigname].Add(j, tempstart + j);
+                            tempphase.markerpos = (1 + blocksize * j).ToString();
                         }
                         else
                         {
-                            posToIndex[contig.contigname].Add(j, tempstart + (contigsize - 1) / blocksize - j);
+                            tempphase.markerpos = (1 + blocksize * ((contigsize - 1) / blocksize - j)).ToString();
                         }
+                        tempphase.chrorigStartIndex = tempstart;
+                        tempphase.chrorigEndIndex = tempend;
+                        tempphase.contigsize = contig.end_bp - contig.start_bp + 1;
+                        if ((j + 1) * blocksize < tempphase.contigsize)
+                        {
+                            tempphase.regionsize = blocksize;
+                        }
+                        else
+                        {
+                            tempphase.regionsize = tempphase.contigsize - j * blocksize;
+                        }
+                        myphaseData.Add(tempphase);
                     }
-                }
-                for (int j = 0; j < (contigsize) / (float)blocksize; j++)
-                {
-                    PhaseData tempphase = new PhaseData();
-                    tempphase.chr2nd = contig.chrname;
-                    tempphase.chrorig = contig.contigname;
-                    tempphase.chrorient = contig.orientation;
-                    if (contig.orientation == "+")
-                    {
-                        tempphase.markerpos = (1 + blocksize * j).ToString();
-                    }
-                    else
-                    {
-                        tempphase.markerpos = (1 + blocksize * ((contigsize - 1) / blocksize - j)).ToString();
-                    }
-                    tempphase.chrorigStartIndex = tempstart;
-                    tempphase.chrorigEndIndex = tempend;
-                    tempphase.contigsize = contig.end_bp - contig.start_bp + 1;
-                    if ((j+1) * blocksize < tempphase.contigsize)
-                    {
-                        tempphase.regionsize = blocksize;
-                    }
-                    else
-                    {
-                        tempphase.regionsize = tempphase.contigsize - j * blocksize;
-                    }
-                    myphaseData.Add(tempphase);
                 }
             });
-            Console.WriteLine(myphaseData.Count);
+            Console.WriteLine("Over than "+limit_short_contig_length+" bp: "+(i2+1)+", Column number: " + myphaseData.Count);
             num_markers = myphaseData.Count;
         }
         void openFileBED(string fileagp, string filebed)
@@ -189,7 +198,7 @@ namespace SELDLA_G
             {
                 count++;
                 if (count % (1000 * 1000) == 0) Console.WriteLine(count);
-                if (count > 10 * 1000 * 1000) break;
+                //if (count > 10 * 1000 * 1000) break;
                 var items = line.Split("\t");
                 if (items.Length == 4)
                 {
@@ -201,11 +210,14 @@ namespace SELDLA_G
                         {
                             countValidReads++;
                             iswaiting = false;
-                            tempx = posToIndex[oldcontigname][(oldpos - 1) / blocksize];
-                            tempy = posToIndex[items[0]][((int.Parse(items[2]) + int.Parse(items[1])) / 2 - 1) / blocksize];
+                            if (posToIndex.ContainsKey(oldcontigname) && posToIndex.ContainsKey(items[0]))
+                            {
+                                tempx = posToIndex[oldcontigname][(oldpos - 1) / blocksize];
+                                tempy = posToIndex[items[0]][((int.Parse(items[2]) + int.Parse(items[1])) / 2 - 1) / blocksize];
+                                countmatrix[tempx, tempy]++;
+                                countmatrix[tempy, tempx] = countmatrix[tempx, tempy];
+                            }
 
-                            countmatrix[tempx, tempy]++;
-                            countmatrix[tempy, tempx] = countmatrix[tempx, tempy];
                         }
                     }
                     else
@@ -220,13 +232,14 @@ namespace SELDLA_G
                     }
                 }
             }
-            Console.WriteLine(countValidReads);
+            Console.WriteLine("Total reads: " + count);
+            Console.WriteLine("Valid paired reads (half of Total reads at most): "+countValidReads);
 
             int maxcount = Enumerable.Range(1, myphaseData.Count).AsParallel().Max(i =>
                 Enumerable.Range(1, myphaseData.Count).ToList().Max(j => countmatrix[i - 1, j - 1])
             );
             //int maxcount = countmatrix.Cast<int>().Max();
-            Console.WriteLine(maxcount);
+            Console.WriteLine("Maximum count of a spot: "+maxcount);
             System.Threading.Tasks.Parallel.For(0, myphaseData.Count, i =>
             {
                 Enumerable.Range(0, myphaseData.Count - 1).ToList().ForEach(j => {
@@ -271,7 +284,8 @@ namespace SELDLA_G
                 Enumerable.Range(1, myphaseData.Count).ToList().Max(j => countmatrix[i - 1, j - 1])
             );
             //int maxcount = countmatrix.Cast<int>().Max();
-            Console.WriteLine(maxcount);
+            Console.WriteLine("Total non-zero dots: " + count);
+            Console.WriteLine("Maximum count of a spot: " + maxcount);
             System.Threading.Tasks.Parallel.For(0, myphaseData.Count, i =>
             {
                 Enumerable.Range(0, myphaseData.Count - 1).ToList().ForEach(j => {
@@ -1071,9 +1085,17 @@ namespace SELDLA_G
             _spriteBatch.Begin();
             _spriteBatch.Draw(texture, new Vector2((float)worldX, (float)worldY), null, Color.White, 0.0f, Vector2.Zero, new Vector2((float)worldW, (float)worldW), SpriteEffects.None, 0.0f);
 
-            drawRect(_spriteBatch, whiteRectangle, pos1.chrStart, pos1.chrEnd - pos1.chrStart + 1, Color.LightBlue);
+            if (colorvari == 1)
+            {
+                drawRect(_spriteBatch, whiteRectangle, pos1.chrStart, pos1.chrEnd - pos1.chrStart + 1, Color.Yellow);
+                drawRect(_spriteBatch, whiteRectangle, pos2.chrStart, pos2.chrEnd - pos2.chrStart + 1, Color.Yellow);
+            }
+            else
+            {
+                drawRect(_spriteBatch, whiteRectangle, pos1.chrStart, pos1.chrEnd - pos1.chrStart + 1, Color.Blue);
+                drawRect(_spriteBatch, whiteRectangle, pos2.chrStart, pos2.chrEnd - pos2.chrStart + 1, Color.Blue);
+            }
             drawRect(_spriteBatch, whiteRectangle, pos1.contigStart, pos1.contigEnd - pos1.contigStart + 1, Color.LightGreen);
-            drawRect(_spriteBatch, whiteRectangle, pos2.chrStart, pos2.chrEnd - pos2.chrStart + 1, Color.LightBlue);
             drawRect(_spriteBatch, whiteRectangle, pos2.contigStart, pos2.contigEnd - pos2.contigStart + 1, Color.LightGreen);
 
             if (markF == 1)
