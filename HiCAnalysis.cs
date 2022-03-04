@@ -1660,8 +1660,13 @@ namespace SELDLA_G
                     }
                 }
             }
-
-            texture.SaveAsPng(File.Create(savefileprefixname + ".contactmap.png"), num_markers, num_markers);
+            try
+            {
+                texture.SaveAsPng(File.Create(savefileprefixname + ".contactmap.png"), num_markers, num_markers);
+            }catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
         }
         void drawRect(SpriteBatch sprite, Texture2D rect, int inworldx, int size, Color color)
         {
