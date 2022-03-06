@@ -150,7 +150,7 @@ python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -b "-p 0.
 #### 1.2. SELDLAの結果からSELDLA-Gの入力ファイルを作成
 
 ```
-wget /Path/To/make_SELDLA-G_input_from_single_1run.awk
+wget https://raw.githubusercontent.com/c2997108/SELDLA-G/master/scripts/make_SELDLA-G_input_from_single_1run.awk
 awk -F '\t' -f make_SELDLA-G_input_from_single_1run.awk seldla_split_1.txt.ld2imp seldla_split_1.txt.ld2.ph seldla_chain.txt > seldla_chain.ld2imp.all.txt
 ```
 
@@ -175,7 +175,7 @@ SELDLA --exmatch 0.60 --clmatch 0.75 --spmatch 0.65 -p 0.03 -b 0.03 --NonZeroSam
 2回実行後に下記を実行する。
 
 ```
-wget make_SELDLA-G_input_from_single_2run.awk
+wget https://raw.githubusercontent.com/c2997108/SELDLA-G/master/scripts/make_SELDLA-G_input_from_single_2run.awk
 samtools faidx seldla_include_unoriented_in_chr.fasta
 awk -F '\t' -f make_SELDLA-G_input_from_single_2run.awk seldla_split_1.txt.ld2imp seldla_split_1.txt.ld2.ph seldla_include_unoriented_in_chr.fasta.fai seldla2nd_break.txt seldla_chain.txt seldla2nd_chain.txt > seldla2nd_chain.ld2imp.all.txt
 ```
@@ -220,7 +220,7 @@ SELDLA --exmatch 0.60 --clmatch 0.75 --spmatch 0.65 -p 0.3 -b 0.1 --NonZeroSampl
 2回実行後に下記を実行する。
 
 ```
-wget make_SELDLA-G_input_from_multi_2run.awk
+wget https://raw.githubusercontent.com/c2997108/SELDLA-G/master/scripts/make_SELDLA-G_input_from_multi_2run.awk
 samtools faidx seldla_include_unoriented_in_chr.fasta
 awk -F '\t' -f make_SELDLA-G_input_from_multi_2run.awk seldla_split_seq.txt seldla_split_*.txt.ld2.ph seldla_include_unoriented_in_chr.fasta.fai seldla2nd_break.txt seldla_chain.txt seldla_chain.txt > seldla2nd_chain.ph.all.txt
 ```
