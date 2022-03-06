@@ -67,9 +67,9 @@ https://github.com/c2997108/SELDLA-G/releases/download/v0.8.4/SELDLA-G_v0.8.4.zi
 
 ## 入力データの作成方法
 
-### SELDLA1回実行家系1つ
+### 1. SELDLA1回実行家系1つ
 
-#### シングルセルや交雑種全ゲノムでSELDLA連鎖解析を行うためにVCFを作り連鎖解析を行う例
+#### 1.1. シングルセルや交雑種全ゲノムでSELDLA連鎖解析を行うためにVCFを作り連鎖解析を行う例
 
 まずはとにかくVCFを作れば良いので、mpileupやGATKなどで作れば良い。それらを手軽に作る手順として拙作のPortable Pipelineを使った手順を説明しておく。
 
@@ -89,7 +89,7 @@ git clone https://github.com/c2997108/OpenPortablePipeline.git
 
 で、スクリプトをダウンロードしておく。
 
-##### 交雑種全ゲノムの場合
+##### 1.1.1. 交雑種全ゲノムの場合
 
 ```
 #contigのFASTAファイル：contigs.fasta
@@ -119,7 +119,7 @@ SELDLA連鎖解析のコマンドは下記の通り。
 python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -b "-p 0.03 -b 0.03 --NonZeroSampleRate=0.05 --NonZeroPhaseRate=0.1 -r 4000 --RateOfNotNASNP=0.001 --RateOfNotNALD=0.01 --ldseqnum 3" -d crossbreed contigs.fasta all.vcf family.txt
 ```
 
-##### 精子シングルセルの場合
+##### 1.1.2. 精子シングルセルの場合
 
 別途10xのウェブサイトからCell Ranger DNA `cellranger-dna-1.1.0.tar.gz`をダウンロードしておく。
 
@@ -147,7 +147,7 @@ SELDLA連鎖解析のコマンドは下記の通り。
 python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -b "-p 0.03 -b 0.03 --NonZeroSampleRate=0.05 --NonZeroPhaseRate=0.1 -r 4000 --RateOfNotNASNP=0.001 --RateOfNotNALD=0.01 --ldseqnum 3 --precleaned=pseudochr.re.fa.removedup.matrix.clean.txt_clean.txt" -d haploid pseudochr.re.fa.removedup.matrix.clean.txt_clean.txt pseudochr.re.fa.removedup.matrix.clean.txt.vcf2.family
 ```
 
-#### SELDLAの結果からSELDLA-Gの入力ファイルを作成
+#### 1.2. SELDLAの結果からSELDLA-Gの入力ファイルを作成
 
 ```
 wget /Path/To/make_SELDLA-G_input_from_single_1run.awk
@@ -158,11 +158,11 @@ awk -F '\t' -f make_SELDLA-G_input_from_single_1run.awk seldla_split_1.txt.ld2im
 - `seldla_chain.ld2imp.all.txt` : -p オプションのフェーズ情報のほう
 - `seldla_split_seq.txt` : -s オプションの配列情報のほう
 
-### SELDLA2回実行家系1つ
+### 2. SELDLA2回実行家系1つ
 
 1度目のSELDLAで十分に伸長できていない場合、その出力を使って再度実行すると良い。その場合、伸長するかどうかの閾値を一度目よりも下げておく方が良い。
 
-#### 精子シングルセルを2回実行する場合
+#### 2.1. 精子シングルセルを2回実行する場合
 
 ```
 i=seldla_newpos_include_unoriented_in_chr.vcf
@@ -184,7 +184,7 @@ awk -F '\t' -f make_SELDLA-G_input_from_single_2run.awk seldla_split_1.txt.ld2im
 - `seldla2nd_chain.ld2imp.all.txt` : -p オプションのフェーズ情報のほう
 - `seldla_split_seq.txt` : -s オプションの配列情報のほう
 
-### SELDLA2回実行家系複数
+### 3. SELDLA2回実行家系複数
 
 RAD-seqなどの通常の連鎖解析はこれになる。単一家系でも、父方と母方の連鎖地図を統合すると思うので。上述のWGS~genotyping-by-mpileupなどでVCFを作っておく。
 
@@ -230,9 +230,9 @@ awk -F '\t' -f make_SELDLA-G_input_from_multi_2run.awk seldla_split_seq.txt seld
 - `seldla2nd_chain.ph.all.txt` : -p オプションのフェーズ情報のほう
 - `seldla_split_seq.txt` : -s オプションの配列情報のほう
  
-### HiC SALSA解析
+### 4. HiC SALSA解析
 
-#### Omni-Cの場合の解析例
+#### 4.1. Omni-Cの場合の解析例
 
 ```
 #SALSAで解析するときの例
