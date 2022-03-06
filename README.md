@@ -101,17 +101,19 @@ python /Path/To/PortablePipeline/scripts/pp.py WGS~genotyping-by-mpileup input_f
 #こちらはコンティグ数が多いと時間がかかる
 ```
 
-その後、SELDLA連鎖解析で使用する家系情報`family.txt`は、下記のように作る。
+その後、SELDLA連鎖解析で使用する家系情報`family.txt`は、下記のように作る。もし親を読んでいない場合は、「親のID」として「-1」を指定する。
 
 ```
-"組み換えが生じたほうの親のID"\t"組み換えが生じていないほうの親のID"\t"交雑種である子供1"
+"組み換えが生じたほうの親のID"\t"組み換えが生じていないほうの親のID"\t"交雑種である子供1"\t"子供2"...
 ```
 
 これと対応するように、SNPを読み込んだあと下記の条件のサイトが解析対象となる。
 
 ```
-1(ヘテロSNPとなっている場所のみが対象となる)\t-1(読まれていない場所のみが対象となる)\t[0 or 1 or 2]
+1(ヘテロSNPとなっている場所のみが対象となる)\t-1(読まれていない場所のみが対象となる)\t[0 or 1 or 2]\t[0 or 1 or 2]...
 ```
+
+SELDLA連鎖解析のコマンドは下記の通り。
 
 ```
 python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -b "-p 0.03 -b 0.03 --NonZeroSampleRate=0.05 --NonZeroPhaseRate=0.1 -r 4000 --RateOfNotNASNP=0.001 --RateOfNotNALD=0.01 --ldseqnum 3" -d crossbreed contigs.fasta all.vcf family.txt
@@ -131,13 +133,15 @@ python /Path/To/PortablePipeline/scripts/pp.py input_fastqs contigs.fasta cellra
 
 family.txtの中身としては、
 ```
-dummy\t精子1のID
+dummy\t精子1のID\t精子2...
 ```
 となっていて、
 clean.txtの中身は
 ```
-1\t[-1 (欠損値) or 0 (変異なし) or 1 (変異あり）]
+1\t[-1 (欠損値) or 0 (変異なし) or 1 (変異あり）]\t[-1 (欠損値) or 0 (変異なし) or 1 (変異あり）]...
 ```
+
+SELDLA連鎖解析のコマンドは下記の通り。
 
 ```
 python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -b "-p 0.03 -b 0.03 --NonZeroSampleRate=0.05 --NonZeroPhaseRate=0.1 -r 4000 --RateOfNotNASNP=0.001 --RateOfNotNALD=0.01 --ldseqnum 3 --precleaned=pseudochr.re.fa.removedup.matrix.clean.txt_clean.txt" -d haploid pseudochr.re.fa.removedup.matrix.clean.txt_clean.txt pseudochr.re.fa.removedup.matrix.clean.txt.vcf2.family
@@ -150,7 +154,22 @@ python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -b "-p 0.
 
 ### SELDLA2回実行家系複数
 
-#### まずはSELDLAで連鎖解析を行うためにVCFを作る例
+RAD-seqなどの通常の連鎖解析はこれになる。単一家系でも、父方と母方の連鎖地図を統合すると思うので。上述のWGS~genotyping-by-mpileupなどでVCFを作っておく。
+
+その後、family.txtとして、下記のようなファイルを作る
+
+```
+"雄親のID"\t"雌親のID"\t"子供1"\t"子供2"...
+"雌親のID"\t"雄親のID"\t"子供1"\t"子供2"...
+```
+
+これと対応するように、SNPを読み込んだあと下記の条件のサイトが解析対象となる。
+
+```
+1(ヘテロSNPとなっている場所のみが対象となる)\t-1(ホモSNPとなっている場所のみが対象となる)\t[0 or 1 or 2]\t[0 or 1 or 2]...
+```
+
+SELDLA連鎖解析のコマンドは下記の通り。
 
 ```
 python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -b "-p 0.3 -b 0.1 -r 100 --DP=5" -d duploid contigs.fasta all.vcf family.txt
