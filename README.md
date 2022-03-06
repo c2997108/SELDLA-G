@@ -69,9 +69,61 @@ https://github.com/c2997108/SELDLA-G/releases/download/v0.8.4/SELDLA-G_v0.8.4.zi
 
 ### SELDLA1回実行家系1つ
 
+#### シングルセルや交雑種全ゲノムでSELDLA連鎖解析を行うためにVCFを作る例
+
+とにかくVCFを作れば良いので、mpileupやGATKなどで作れば良い。それらを手軽に作る手順として拙作のPortable Pipelineを使った手順を説明しておく。
+
+Dockerをインストールする。
+https://docs.docker.com/engine/install/
+に従い、Linux （x86_64）にDockerをインストールする。
+
+インストール後にroot以外でもdockerを実行できるようにdockerグループに追加しておく。
+```
+sudo usermod -a -G docker $USER 
+```
+以上を実行したら設定を反映させるために、一旦ログアウトしてから再度ログインする必要あり。
+
+```
+git clone https://github.com/c2997108/OpenPortablePipeline.git
+```
+
+で、スクリプトをダウンロードしておく。
+
+##### 交雑種全ゲノムの場合
+
+```
+#contigのFASTAファイル：contigs.fasta
+#RADseqなどのペアエンドのFASTQファイルが入ったディレクトリ：input_fastqs
+
+python /Path/To/PortablePipeline/scripts/pp.py WGS~genotyping-by-mpileup input_fastqs contigs.fasta
+#もしくは
+#python /Path/To/PortablePipeline/scripts/pp.py WGS~genotyping-by-GATK input_fastqs contigs.fasta
+#こちらはコンティグ数が多いと時間がかかる
+```
+
+##### 精子シングルセルの場合
+
+別途10xのウェブサイトからCell Ranger DNA `cellranger-dna-1.1.0.tar.gz`をダウンロードしておく。
+
+```
+python /Path/To/PortablePipeline/scripts/pp.py input_fastqs contigs.fasta cellranger-dna-1.1.0.tar.gz
+```
+
+#### SELDLA連鎖解析
+
+家系情報`family.txt`は、XXXを参考に作成。
+
+```
+python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -b "-p 0.3 -b 0.1 -r 100 --DP=5" -d duploid contigs.fasta all.vcf family.txt
+```
+
+その後のステップは・・・・・（工事中）
+
 ### SELDLA2回実行家系1つ
 
 ### SELDLA2回実行家系複数
+
+#### まずはSELDLAで連鎖解析を行うためにVCFを作る例
 
 ### HiC SALSA解析
 
