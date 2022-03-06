@@ -101,6 +101,22 @@ python /Path/To/PortablePipeline/scripts/pp.py WGS~genotyping-by-mpileup input_f
 #こちらはコンティグ数が多いと時間がかかる
 ```
 
+その後、SELDLA連鎖解析で使用する家系情報`family.txt`は、下記のように作る。
+
+```
+"組み換えが生じたほうの親のID"\t"組み換えが生じていないほうの親のID"\t"交雑種である子供1"
+```
+
+これと対応するように、SNPを読み込んだあと下記の条件のサイトが解析対象となる。
+
+```
+1(ヘテロSNPとなっている場所のみが対象となる)\t-1(読まれていない場所のみが対象となる)\t[0 or 1 or 2]
+```
+
+```
+python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -b "-p 0.03 -b 0.03 --NonZeroSampleRate=0.05 --NonZeroPhaseRate=0.1 -r 4000 --RateOfNotNASNP=0.001 --RateOfNotNALD=0.01 --ldseqnum 3" -d crossbreed contigs.fasta all.vcf family.txt
+```
+
 ##### 精子シングルセルの場合
 
 別途10xのウェブサイトからCell Ranger DNA `cellranger-dna-1.1.0.tar.gz`をダウンロードしておく。
@@ -109,14 +125,25 @@ python /Path/To/PortablePipeline/scripts/pp.py WGS~genotyping-by-mpileup input_f
 python /Path/To/PortablePipeline/scripts/pp.py input_fastqs contigs.fasta cellranger-dna-1.1.0.tar.gz
 ```
 
-#### SELDLA連鎖解析
+その後のSELDLA連鎖解析ではシングルセルの場合、次のファイルを使用する。
+- pseudochr.re.fa.removedup.matrix.clean.txt_clean.txt
+- pseudochr.re.fa.removedup.matrix.clean.txt.vcf2.family
 
-家系情報`family.txt`は、XXXを参考に作成。
+family.txtの中身としては、
+```
+dummy\t精子1のID
+```
+となっていて、
+clean.txtの中身は
+```
+1\t[-1 (欠損値) or 0 (変異なし) or 1 (変異あり）]
+```
 
 ```
-python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -b "-p 0.3 -b 0.1 -r 100 --DP=5" -d duploid contigs.fasta all.vcf family.txt
+python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -b "-p 0.03 -b 0.03 --NonZeroSampleRate=0.05 --NonZeroPhaseRate=0.1 -r 4000 --RateOfNotNASNP=0.001 --RateOfNotNALD=0.01 --ldseqnum 3 --precleaned=pseudochr.re.fa.removedup.matrix.clean.txt_clean.txt" -d haploid pseudochr.re.fa.removedup.matrix.clean.txt_clean.txt pseudochr.re.fa.removedup.matrix.clean.txt.vcf2.family
 ```
 
+#### 
 その後のステップは・・・・・（工事中）
 
 ### SELDLA2回実行家系1つ
@@ -124,6 +151,10 @@ python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -b "-p 0.
 ### SELDLA2回実行家系複数
 
 #### まずはSELDLAで連鎖解析を行うためにVCFを作る例
+
+```
+python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -b "-p 0.3 -b 0.1 -r 100 --DP=5" -d duploid contigs.fasta all.vcf family.txt
+```
 
 ### HiC SALSA解析
 
