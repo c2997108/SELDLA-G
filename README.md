@@ -78,6 +78,7 @@ https://github.com/c2997108/SELDLA-G/releases/download/v0.8.4/SELDLA-G_v0.8.4.zi
 #### Omni-Cの場合の解析例
 
 ```
+#SALSAで解析するときの例
 ref=scaffolds.fasta
 fq1=reads_1.fastq
 fq2=reads_2.fastq
@@ -87,6 +88,7 @@ samtools faidx $ref
 bwa mem -t 32 $ref $fq1 $fq2 |samtools view -Sb - > output.bam
 bamToBed -i output.bam > alignment.bed
 python /Path/To/SALSA/run_pipeline.py -a $ref -l $ref.fai -b alignment.bed -e DNASE -o SALSA_output 
+#ここまでSALSAの解析例
 ```
 
 SALSA_outputフォルダーの中の`scaffolds_FINAL.agp`、`alignment_iteration_1.bed`を指定すれば良い。
