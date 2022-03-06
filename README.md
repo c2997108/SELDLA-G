@@ -11,14 +11,14 @@ https://github.com/c2997108/SELDLA-G/releases/download/v0.8.4/SELDLA-G_v0.8.4.zi
 ## 動作環境
 
 ### Windows 10 or 11
-- Nvidia GT710以降のGPUではGPUが使えるのを確認済み。AMDやINDELの新しいGPUなら大丈夫かも。未確認。
+- Nvidia GT710以降、AMD RX6000台のGPUではGPUが使えるのを確認済み。INDELの新しい統合GPUなら大丈夫かも、未確認。
 - 連鎖解析モードはWindowsでGPUが使える環境を推奨。
 
 ### Mac
 - GPUは使えないのではないかなと思うけど、CPUでは動作を確認できた。
 
 ### Linux
-- 一応CentOS7でも起動して、NvidiaのドライバーがあればGPUも使ってコンタクトマップ表示までは正常だけど、キー入力が変。
+- 一応CentOS7でも起動して、NvidiaのドライバーがあればGPUも使えた。ただ、コンタクトマップ表示がマーカー数2000程度以上では表示されないみたい。
 
 ## 開発環境のセットアップ
 
@@ -45,7 +45,7 @@ https://github.com/c2997108/SELDLA-G/releases/download/v0.8.4/SELDLA-G_v0.8.4.zi
 
 - O : ファイルを開く。連鎖解析モードでは、ファイルはSELDLAで処理した結果ファイル(`XXX_chain.ld2imp.all.txt`)、もしくはSELDLA-Gで途中保存したファイル(`XXX.phase.txt`)。Hi-Cモードでは、SALSAの`scaffolds_FINAL.agp`, `alignment_iteration_1.bed`を指定する。
 - I : (Hi-C専用)保存したファイルを読み込んで再度表示する。`XXX.agp`, `XXX.matrix`
-- P : 連鎖解析モードでは、SELDLAでコンティグのFASTAをミスアセンブル箇所で分断してタブ区切りテキストにしたファイル(`XXX_split_seq.txt`)、Hi-CモードではSALSAで分断したコンティグのFASTA(`assembly.cleaned.fasta`)を読み込んで、最終的な伸長後のFASTAファイルなどを出力する。ターミナルのほうにFASTA.TABファイル、FASTAファイル名を入力する必要あり。
+- P : 連鎖解析モードでは、SELDLAでコンティグのFASTAをミスアセンブル箇所で分断してタブ区切りテキストにしたファイル(`XXX_split_seq.txt`)、Hi-CモードではSALSAで分断したコンティグのFASTA(`assembly.cleaned.fasta`)を読み込んで、最終的な伸長後のFASTAファイルなどを出力する。ターミナルのほうにXXXseq.txtファイル、fastaファイル名を入力する必要あり。
 - R : 基本的に本ツールのコンタクトマップは、現在マウスカーソルがいる場所のX, Y座標のマーカーの位置を起点に操作を行う。Rを押すと、上側の青色マーカーの染色体内の並びを反転させる。
 - T : 2つの青色マーカー間の染色体を入れ替える
 - Y : 上側の緑色のマーカーのコンティグ内の並びを反転させる。染色体を超えて範囲選択しても動くけど、色々とおかしなことになるので同一染色体内のコンティグを選択すること。
@@ -64,3 +64,29 @@ https://github.com/c2997108/SELDLA-G/releases/download/v0.8.4/SELDLA-G_v0.8.4.zi
 - Z : 一度だけ直前の操作を取り消す。
 - C : メモリー上に一時保存する
 - V : メモリー上に一時保存したデータを呼び出す
+
+## 入力データの作成方法
+
+### SELDLA1回実行家系1つ
+
+### SELDLA2回実行家系1つ
+
+### SELDLA2回実行家系複数
+
+### HiC SALSA解析
+
+#### Omni-Cの場合の解析例
+
+```
+ref=scaffolds.fasta
+fq1=reads_1.fastq
+fq2=reads_2.fastq
+
+bwa index $ref
+samtools faidx $ref
+bwa mem -t 32 $ref $fq1 $fq2 |samtools view -Sb - > output.bam
+bamToBed -i output.bam > alignment.bed
+python /Path/To/SALSA/run_pipeline.py -a $ref -l $ref.fai -b alignment.bed -e DNASE -o SALSA_output 
+```
+
+SALSA_outputフォルダーの中の`scaffolds_FINAL.agp`、`alignment_iteration_1.bed`を指定すれば良い。
