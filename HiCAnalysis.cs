@@ -12,6 +12,7 @@ using ILGPU.Runtime;
 using ILGPU.Runtime.OpenCL;
 using SkiaSharp;
 using System.Text;
+using Mono.Options;
 
 namespace SELDLA_G
 {
@@ -25,7 +26,6 @@ namespace SELDLA_G
         SKBitmap bitmap;
         SKCanvas canvas;
         SKPaint paintPop;
-        int maxItemsSize = 1000 * 1000;
         int worldX = 0;
         int worldY = 80;
         int inworldX = 0;
@@ -64,7 +64,7 @@ namespace SELDLA_G
         Dictionary<string, int> chrbpsize = new Dictionary<string, int>();
         Dictionary<string, float> chrcmsize = new Dictionary<string, float>();
         Dictionary<string, Dictionary<int, int>> posToIndex = new Dictionary<string, Dictionary<int, int>>();
-        int blocksize = 100 * 1000;
+        int windowsize = 100 * 1000;
         string fileSeq = "assembly.cleaned.fasta";
         //string fileSeq = @"E:\download\assembly.cleaned.fasta";
         //string fileSeq = "../../../cl0.92_sp0.90_ex0.60_split_seq.txt";
@@ -85,11 +85,48 @@ namespace SELDLA_G
         int[,] savedcountmatrix;
         List<PhaseData> savedmyphaseData = new List<PhaseData>();
         int colorvari = 2; //1: black, 2:white
-        int limit_short_contig_length = 10*1000;
+        int limit_short_contig_length = 1*1000;
+        bool showHelp = false;
 
 
-        public HiCAnalysis()
+        public HiCAnalysis(string[] args)
         {
+
+            var p = new OptionSet() {
+                {"a|agp=", "an input AGP file", v => fileAGP = v},
+                {"b|bed=", "an input BED file", v => fileBED = v},
+                {"m|matrix=", "a calculated matrix file", v => fileCalculated = v},
+                {"f|fasta=", "an input FASTA file", v => fileSeq = v},
+                {"o|output=", "output prefix [hic_output]", v => savefileprefixname = v},
+                {"w|window=", "window size (bp) [100,000]", (int v) => windowsize = v},
+                {"l|limit=", "the limit of the length of short contig (bp) [1,000]", (int v) => limit_short_contig_length = v},
+                //VALUEをとらないオプションは以下のようにnullとの比較をしてTrue/Falseの値をとるようにする
+                {"h|help", "show help.", v => showHelp = v != null}
+            };
+            try
+            {
+                var extra = p.Parse(args);
+                extra.ForEach(t => Console.WriteLine("invalid parameter: " + t));
+                if (extra.Count > 0)
+                {
+                    return;
+                }
+            }
+            //パースに失敗した場合OptionExceptionを発生させる
+            catch (OptionException e)
+            {
+                Console.WriteLine("Option parse error:");
+                Console.WriteLine(e.Message);
+                Console.WriteLine("Try `--help' for more information.");
+                return;
+            }
+            if (showHelp)
+            {
+                p.WriteOptionDescriptions(Console.Out);
+                return;
+            }
+
+
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
@@ -127,13 +164,13 @@ namespace SELDLA_G
                     i2++;
                     i++;
                     int tempstart = i;
-                    int tempend = i + (int)((contigsize - 1) / blocksize);
+                    int tempend = i + (int)((contigsize - 1) / windowsize);
                     i = tempend;
                     if (!chrStartIndex.ContainsKey(contig.chrname)) chrStartIndex.Add(contig.chrname, tempstart);
                     if (!posToIndex.ContainsKey(contig.contigname))
                     {
                         posToIndex.Add(contig.contigname, new Dictionary<int, int>());
-                        for (int j = 0; j < contigsize / (float)blocksize; j++)
+                        for (int j = 0; j < contigsize / (float)windowsize; j++)
                         {
                             if (contig.orientation == "+")
                             {
@@ -141,11 +178,11 @@ namespace SELDLA_G
                             }
                             else
                             {
-                                posToIndex[contig.contigname].Add(j, tempstart + (contigsize - 1) / blocksize - j);
+                                posToIndex[contig.contigname].Add(j, tempstart + (contigsize - 1) / windowsize - j);
                             }
                         }
                     }
-                    for (int j = 0; j < (contigsize) / (float)blocksize; j++)
+                    for (int j = 0; j < (contigsize) / (float)windowsize; j++)
                     {
                         PhaseData tempphase = new PhaseData();
                         tempphase.chr2nd = contig.chrname;
@@ -153,22 +190,22 @@ namespace SELDLA_G
                         tempphase.chrorient = contig.orientation;
                         if (contig.orientation == "+")
                         {
-                            tempphase.markerpos = (1 + blocksize * j).ToString();
+                            tempphase.markerpos = (1 + windowsize * j).ToString();
                         }
                         else
                         {
-                            tempphase.markerpos = (1 + blocksize * ((contigsize - 1) / blocksize - j)).ToString();
+                            tempphase.markerpos = (1 + windowsize * ((contigsize - 1) / windowsize - j)).ToString();
                         }
                         tempphase.chrorigStartIndex = tempstart;
                         tempphase.chrorigEndIndex = tempend;
                         tempphase.contigsize = contig.end_bp - contig.start_bp + 1;
-                        if ((j + 1) * blocksize < tempphase.contigsize)
+                        if ((j + 1) * windowsize < tempphase.contigsize)
                         {
-                            tempphase.regionsize = blocksize;
+                            tempphase.regionsize = windowsize;
                         }
                         else
                         {
-                            tempphase.regionsize = tempphase.contigsize - j * blocksize;
+                            tempphase.regionsize = tempphase.contigsize - j * windowsize;
                         }
                         myphaseData.Add(tempphase);
                     }
@@ -212,8 +249,8 @@ namespace SELDLA_G
                             iswaiting = false;
                             if (posToIndex.ContainsKey(oldcontigname) && posToIndex.ContainsKey(items[0]))
                             {
-                                tempx = posToIndex[oldcontigname][(oldpos - 1) / blocksize];
-                                tempy = posToIndex[items[0]][((int.Parse(items[2]) + int.Parse(items[1])) / 2 - 1) / blocksize];
+                                tempx = posToIndex[oldcontigname][(oldpos - 1) / windowsize];
+                                tempy = posToIndex[items[0]][((int.Parse(items[2]) + int.Parse(items[1])) / 2 - 1) / windowsize];
                                 countmatrix[tempx, tempy]++;
                                 countmatrix[tempy, tempx] = countmatrix[tempx, tempy];
                             }
@@ -245,7 +282,7 @@ namespace SELDLA_G
                 Enumerable.Range(0, myphaseData.Count - 1).ToList().ForEach(j => {
                     if (countmatrix[i, j] > 0)
                     {
-                        distphase3[i, j] = ((float)(Math.Log(countmatrix[i, j] * (blocksize / (float)myphaseData[i].regionsize) * (blocksize / (float)myphaseData[j].regionsize), 10) / Math.Log(maxcount, 10)));
+                        distphase3[i, j] = ((float)(Math.Log(countmatrix[i, j] * (windowsize / (float)myphaseData[i].regionsize) * (windowsize / (float)myphaseData[j].regionsize), 10) / Math.Log(maxcount, 10)));
                         if (distphase3[i, j] > 1) distphase3[i, j] = 1;
                     }
 
@@ -272,8 +309,8 @@ namespace SELDLA_G
                 if (items.Length == 5)
                 {
                     {
-                        tempx = posToIndex[items[0]][(int.Parse(items[1]) - 1) / blocksize];
-                        tempy = posToIndex[items[2]][(int.Parse(items[3]) - 1) / blocksize];
+                        tempx = posToIndex[items[0]][(int.Parse(items[1]) - 1) / windowsize];
+                        tempy = posToIndex[items[2]][(int.Parse(items[3]) - 1) / windowsize];
 
                         countmatrix[tempx, tempy]=int.Parse(items[4]);
                     }
@@ -291,7 +328,7 @@ namespace SELDLA_G
                 Enumerable.Range(0, myphaseData.Count - 1).ToList().ForEach(j => {
                     if (countmatrix[i, j] > 0)
                     {
-                        distphase3[i, j] = ((float)(Math.Log(countmatrix[i, j] * (blocksize / (float)myphaseData[i].regionsize) * (blocksize / (float)myphaseData[j].regionsize), 10) / Math.Log(maxcount, 10)));
+                        distphase3[i, j] = ((float)(Math.Log(countmatrix[i, j] * (windowsize / (float)myphaseData[i].regionsize) * (windowsize / (float)myphaseData[j].regionsize), 10) / Math.Log(maxcount, 10)));
                         if (distphase3[i, j] > 1) distphase3[i, j] = 1;
                     }
 

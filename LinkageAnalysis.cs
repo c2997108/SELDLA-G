@@ -12,6 +12,7 @@ using ILGPU.Runtime;
 using ILGPU.Runtime.OpenCL;
 using SkiaSharp;
 using System.Text;
+using Mono.Options;
 
 namespace SELDLA_G
 {
@@ -25,7 +26,7 @@ namespace SELDLA_G
         SKBitmap bitmap;
         SKCanvas canvas;
         SKPaint paintPop;
-        int maxItemsSize = 1000 * 1000;
+        //int maxItemsSize = 1000 * 1000;
         int worldX = 0;
         int worldY = 80;
         int inworldX = 0;
@@ -74,10 +75,46 @@ namespace SELDLA_G
         float[,] saveddistphase3;
         List<PhaseData> savedmyphaseData = new List<PhaseData>();
         int colorvari = 2; //1: black, 2:white
+        bool showHelp = false;
 
 
-        public LinkageAnalysis()
+        public LinkageAnalysis(string[] args)
         {
+
+            var p = new OptionSet() {
+                {"p|phase=", "an input phase file", v => filePhase = v},
+                {"s|seq=", "an input sequence file", v => fileSeq = v},
+                {"o|output=", "output prefix [seldlag_output]", v => savefileprefixname = v},
+                //VALUEをとらないオプションは以下のようにnullとの比較をしてTrue/Falseの値をとるようにする
+                {"h|help", "show help.", v => showHelp = v != null}
+            };
+            try
+            {
+                var extra = p.Parse(args);
+                extra.ForEach(t => Console.WriteLine("invalid parameter: " + t));
+                if (extra.Count > 0)
+                {
+                    return;
+                }
+            }
+            //パースに失敗した場合OptionExceptionを発生させる
+            catch (OptionException e)
+            {
+                Console.WriteLine("Option parse error:");
+                Console.WriteLine(e.Message);
+                Console.WriteLine("Try `--help' for more information.");
+                return;
+            }
+            if (showHelp)
+            {
+                p.WriteOptionDescriptions(Console.Out);
+                return;
+            }
+
+
+
+
+
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
@@ -315,7 +352,7 @@ namespace SELDLA_G
             for (int i = 0; i < num_markers; i++)
             {
                 num_rows++;
-                if (num_markers * (i + 1) > maxItemsSize) break;
+                //if (num_markers * (i + 1) > maxItemsSize) break;
             }
             distphase3 = new float[num_markers, num_markers];
             int[] phaseForGPU;

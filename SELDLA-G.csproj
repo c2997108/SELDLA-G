@@ -25,9 +25,13 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="ILGPU" Version="1.0.0" />
+    <PackageReference Include="Mono.Options" Version="6.12.0.148" />
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.0.1641" />
     <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.0.1641" />
     <PackageReference Include="SkiaSharp" Version="2.80.3" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="2.80.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="scripts\" />
   </ItemGroup>
 </Project>
