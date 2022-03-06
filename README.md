@@ -69,9 +69,9 @@ https://github.com/c2997108/SELDLA-G/releases/download/v0.8.4/SELDLA-G_v0.8.4.zi
 
 ### SELDLA1回実行家系1つ
 
-#### シングルセルや交雑種全ゲノムでSELDLA連鎖解析を行うためにVCFを作る例
+#### シングルセルや交雑種全ゲノムでSELDLA連鎖解析を行うためにVCFを作り連鎖解析を行う例
 
-とにかくVCFを作れば良いので、mpileupやGATKなどで作れば良い。それらを手軽に作る手順として拙作のPortable Pipelineを使った手順を説明しておく。
+まずはとにかくVCFを作れば良いので、mpileupやGATKなどで作れば良い。それらを手軽に作る手順として拙作のPortable Pipelineを使った手順を説明しておく。
 
 Dockerをインストールする。
 https://docs.docker.com/engine/install/
@@ -147,10 +147,42 @@ SELDLA連鎖解析のコマンドは下記の通り。
 python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -b "-p 0.03 -b 0.03 --NonZeroSampleRate=0.05 --NonZeroPhaseRate=0.1 -r 4000 --RateOfNotNASNP=0.001 --RateOfNotNALD=0.01 --ldseqnum 3 --precleaned=pseudochr.re.fa.removedup.matrix.clean.txt_clean.txt" -d haploid pseudochr.re.fa.removedup.matrix.clean.txt_clean.txt pseudochr.re.fa.removedup.matrix.clean.txt.vcf2.family
 ```
 
-#### 
-その後のステップは・・・・・（工事中）
+#### SELDLAの結果からSELDLA-Gの入力ファイルを作成
+
+```
+wget /Path/To/make_SELDLA-G_input_from_single_1run.awk
+awk -F '\t' -f make_SELDLA-G_input_from_single_1run.awk seldla_split_1.txt.ld2imp seldla_split_1.txt.ld2.ph seldla_chain.txt > seldla_chain.ld2imp.all.txt
+```
+
+下記のファイルをSELDLA-Gの入力ファイルとする。
+- `seldla_chain.ld2imp.all.txt` : -p オプションのフェーズ情報のほう
+- `seldla_split_seq.txt` : -s オプションの配列情報のほう
 
 ### SELDLA2回実行家系1つ
+
+1度目のSELDLAで十分に伸長できていない場合、その出力を使って再度実行すると良い。その場合、伸長するかどうかの閾値を一度目よりも下げておく方が良い。
+
+#### 精子シングルセルを2回実行する場合
+
+```
+i=seldla_newpos_include_unoriented_in_chr.vcf
+(head -n 1 $i; tail -n+2 $i|sort -k1,1V -k2,2n) > $i.sorted.vcf
+awk -F'\t' 'NR==1{OFS="\t"; $10="dummy\t"$10; print $0} NR>1{$10="1\t"$10; print $0}' $i.sorted.vcf > $i.sorted.cleaned.txt
+j=seldla_include_unoriented_in_chr.fasta;
+SELDLA --exmatch 0.60 --clmatch 0.75 --spmatch 0.65 -p 0.03 -b 0.03 --NonZeroSampleRate=0.05 --NonZeroPhaseRate=0.1 -r 40000 --RateOfNotNASNP=0.001 --RateOfNotNALD=0.01 --ldseqnum 2 --fasta $j --vcf $i.sorted.vcf --precleaned $i.sorted.cleaned.txt --family family.filt.txt --mode haploid --output seldla2nd
+```
+
+2回実行後に下記を実行する。
+
+```
+wget make_SELDLA-G_input_from_single_2run.awk
+samtools faidx seldla_include_unoriented_in_chr.fasta
+awk -F '\t' -f make_SELDLA-G_input_from_single_2run.awk seldla_split_1.txt.ld2imp seldla_split_1.txt.ld2.ph seldla_include_unoriented_in_chr.fasta.fai seldla2nd_break.txt seldla_chain.txt seldla2nd_chain.txt > seldla2nd_chain.ld2imp.all.txt
+```
+
+下記のファイルをSELDLA-Gの入力ファイルとする。
+- `seldla2nd_chain.ld2imp.all.txt` : -p オプションのフェーズ情報のほう
+- `seldla_split_seq.txt` : -s オプションの配列情報のほう
 
 ### SELDLA2回実行家系複数
 
@@ -169,12 +201,35 @@ RAD-seqなどの通常の連鎖解析はこれになる。単一家系でも、�
 1(ヘテロSNPとなっている場所のみが対象となる)\t-1(ホモSNPとなっている場所のみが対象となる)\t[0 or 1 or 2]\t[0 or 1 or 2]...
 ```
 
-SELDLA連鎖解析のコマンドは下記の通り。
+1度目のSELDLA連鎖解析のコマンドは下記の通り。
 
 ```
-python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -b "-p 0.3 -b 0.1 -r 100 --DP=5" -d duploid contigs.fasta all.vcf family.txt
+SELDLA --exmatch 0.7 --clmatch 0.85 --spmatch 0.8 -p 0.3 -b 0.1 --NonZeroSampleRate=0.2 --NonZeroPhaseRate=0.3 -r 4000 --RateOfNotNASNP=0.2 --RateOfNotNALD=0.4 --ldseqnum 2 --fasta contigs.fasta --vcf all.vcf --family family.txt --mode duploid --output seldla
 ```
 
+2度目は例えば
+
+```
+i=seldla_newpos_include_unoriented_in_chr.vcf
+(head -n 1 $i; tail -n+2 $i|sort -k1,1V -k2,2n) > $i.sorted.vcf
+awk -F'\t' 'NR==1{OFS="\t"; $10="dummy\t"$10; print $0} NR>1{$10="1\t"$10; print $0}' $i.sorted.vcf > $i.sorted.cleaned.txt
+j=seldla_include_unoriented_in_chr.fasta
+SELDLA --exmatch 0.60 --clmatch 0.75 --spmatch 0.65 -p 0.3 -b 0.1 --NonZeroSampleRate=0.2 --NonZeroPhaseRate=0.3 -r 20000 --RateOfNotNASNP=0.2 --RateOfNotNALD=0.4 --ldseqnum 2 --fasta $j --vcf $i.sorted.vcf --precleaned $i.sorted.cleaned.txt --family family.txt --mode duploid --output seldla2nd
+```
+
+2回実行後に下記を実行する。
+
+```
+wget make_SELDLA-G_input_from_multi_2run.awk
+samtools faidx seldla_include_unoriented_in_chr.fasta
+awk -F '\t' -f make_SELDLA-G_input_from_multi_2run.awk seldla_split_seq.txt seldla_split_*.txt.ld2.ph seldla_include_unoriented_in_chr.fasta.fai seldla2nd_break.txt seldla_chain.txt seldla_chain.txt > seldla2nd_chain.ph.all.txt
+```
+
+この場合、出力されるのはコンティグの両端のフェーズ情報のみ。（複数家系あるとSNPの存在した場所がずれるため、ブロックごとに単純にマージできないため）
+下記のファイルをSELDLA-Gの入力ファイルとする。
+- `seldla2nd_chain.ph.all.txt` : -p オプションのフェーズ情報のほう
+- `seldla_split_seq.txt` : -s オプションの配列情報のほう
+ 
 ### HiC SALSA解析
 
 #### Omni-Cの場合の解析例
