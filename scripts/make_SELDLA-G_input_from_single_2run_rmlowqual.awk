@@ -48,16 +48,6 @@
             }else{
                 PROCINFO["sorted_in"] = "@ind_num_desc";
             }
-            #lowqualを出力
-            if(length(ph[oldscaf])>0){
-                for(j in ph[oldscaf]){
-                    ORS="";
-                    split(ph[oldscaf][j],arr,"\t");
-                    print $1"\t"oldscaf"\t"$3"\t+\t"oldscaf;
-                    for(k=3;k<=length(arr);k++){print "\t"arr[k]}; 
-                    print "\n";ORS="\n";
-                }
-            }
             
         }
     }else{
@@ -84,16 +74,6 @@
                                 for(k=3;k<=length(arr);k++){print "\t"arr[k]}; 
                                 print "\n";ORS="\n";
                             }
-                        }else{ #lowqualを出力
-                            if(length(ph[original[oldchr][i]])>0){
-                                for(j in ph[original[oldchr][i]]){
-                                    ORS="";
-                                    split(ph[original[oldchr][i]][j],arr,"\t");
-                                    print $1"\t"oldchr"\t"$3"\t"orient[oldchr][i]"\t"original[oldchr][i];
-                                    for(k=3;k<=length(arr);k++){print "\t"arr[k]}; 
-                                    print "\n";ORS="\n";
-                                }
-                            }
                         }
                     }
                 }
@@ -115,16 +95,6 @@
                                 print $1"\t"oldchr"\t"$3"\t"orient[oldchr][i]"\t"original[oldchr][i];
                                 for(k=3;k<=length(arr);k++){print "\t"arr[k]}; 
                                 print "\n";ORS="\n";
-                            }
-                        }else{ #lowqualを出力
-                            if(length(ph[original[oldchr][i]])>0){
-                                for(j in ph[original[oldchr][i]]){
-                                    ORS="";
-                                    split(ph[original[oldchr][i]][j],arr,"\t");
-                                    print $1"\t"oldchr"\t"$3"\t"orient[oldchr][i]"\t"original[oldchr][i];
-                                    for(k=3;k<=length(arr);k++){print "\t"arr[k]}; 
-                                    print "\n";ORS="\n";
-                                }
                             }
                         }
                     }
@@ -152,16 +122,6 @@
                             for(k=3;k<=length(arr);k++){print "\t"arr[k]}; 
                             print "\n";ORS="\n";
                         }
-                    }else{ #lowqualを出力
-                        if(length(ph[original[oldchr][i]])>0){
-                            for(j in ph[original[oldchr][i]]){
-                                ORS="";
-                                split(ph[original[oldchr][i]][j],arr,"\t");
-                                print $1"\t"oldchr"\t"$3"\t"orient[oldchr][i]"\t"original[oldchr][i];
-                                for(k=3;k<=length(arr);k++){print "\t"arr[k]}; 
-                                print "\n";ORS="\n";
-                            }
-                        }
                     }
                 }
             }else{
@@ -180,16 +140,6 @@
                             print $1"\t"oldchr"\t"$3"\t"orient[oldchr][i]"\t"original[oldchr][i];
                             for(k=3;k<=length(arr);k++){print "\t"arr[k]}; 
                             print "\n";ORS="\n";
-                        }
-                    }else{ #lowqualを出力
-                        if(length(ph[original[oldchr][i]])>0){
-                            for(j in ph[original[oldchr][i]]){
-                                ORS="";
-                                split(ph[original[oldchr][i]][j],arr,"\t");
-                                print $1"\t"oldchr"\t"$3"\t"orient[oldchr][i]"\t"original[oldchr][i];
-                                for(k=3;k<=length(arr);k++){print "\t"arr[k]}; 
-                                print "\n";ORS="\n";
-                            }
                         }
                     }
                 }
