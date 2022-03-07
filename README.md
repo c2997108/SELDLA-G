@@ -124,7 +124,7 @@ python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -b "-p 0.
 別途10xのウェブサイトからCell Ranger DNA `cellranger-dna-1.1.0.tar.gz`をダウンロードしておく。
 
 ```
-python /Path/To/PortablePipeline/scripts/pp.py input_fastqs contigs.fasta cellranger-dna-1.1.0.tar.gz
+python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~single-cell_CellRanger-VarTrix input_fastqs contigs.fasta cellranger-dna-1.1.0.tar.gz
 ```
 
 その後のSELDLA連鎖解析ではシングルセルの場合、次のファイルを使用する。
