@@ -67,7 +67,7 @@ https://github.com/c2997108/SELDLA-G/releases/download/v0.8.4/SELDLA-G_v0.8.4.zi
 
 ## 入力データの作成方法
 
-### 1. SELDLA1回実行家系1つ
+### 1. SELDLA家系1つ
 
 #### 1.1. シングルセルや交雑種全ゲノムでSELDLA連鎖解析を行うためにVCFを作り連鎖解析を行う例
 
@@ -151,6 +151,8 @@ python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -b "-p 0.
 
 ```
 wget https://raw.githubusercontent.com/c2997108/SELDLA-G/master/scripts/make_SELDLA-G_input_from_single_1run.awk
+#ノイズになりうるマーカーが1つしか取れなかったような短いコンティグを除去したい場合はこちら
+#wget https://raw.githubusercontent.com/c2997108/SELDLA-G/master/scripts/make_SELDLA-G_input_from_single_1run_rmlowqual.awk
 awk -F '\t' -f make_SELDLA-G_input_from_single_1run.awk seldla_split_1.txt.ld2imp seldla_split_1.txt.ld2.ph seldla_chain.txt > seldla_chain.ld2imp.all.txt
 ```
 
@@ -158,11 +160,73 @@ awk -F '\t' -f make_SELDLA-G_input_from_single_1run.awk seldla_split_1.txt.ld2im
 - `seldla_chain.ld2imp.all.txt` : -p オプションのフェーズ情報のほう
 - `seldla_split_seq.txt` : -s オプションの配列情報のほう
 
-### 2. SELDLA2回実行家系1つ
+### 2. SELDLA複数家系
+
+RAD-seqなどの通常の連鎖解析はこれになる。単一家系でも、父方と母方の連鎖地図を統合すると思うので。上述のWGS~genotyping-by-mpileupなどでVCFを作っておく。
+
+その後、family.txtとして、下記のようなファイルを作る
+
+```
+"雄親のID"\t"雌親のID"\t"子供1"\t"子供2"...
+"雌親のID"\t"雄親のID"\t"子供1"\t"子供2"...
+```
+
+これと対応するように、SNPを読み込んだあと下記の条件のサイトが解析対象となる。
+
+```
+1(ヘテロSNPとなっている場所のみが対象となる)\t[0 or 2](ホモSNPとなっている場所のみが対象となる)\t[0 or 1 or 2]\t[0 or 1 or 2]...
+```
+
+SELDLA連鎖解析のコマンドは下記の通り。
+
+```
+SELDLA --exmatch 0.7 --clmatch 0.85 --spmatch 0.8 -p 0.3 -b 0.1 --NonZeroSampleRate=0.2 --NonZeroPhaseRate=0.3 -r 4000 --RateOfNotNASNP=0.2 --RateOfNotNALD=0.4 --ldseqnum 2 --fasta contigs.fasta --vcf all.vcf --family family.txt --mode duploid --output seldla
+```
+
+2回実行後に下記を実行する。
+
+```
+wget https://raw.githubusercontent.com/c2997108/SELDLA-G/master/scripts/make_SELDLA-G_input_from_multi_1run.awk
+awk -F '\t' -f make_SELDLA-G_input_from_multi_1run.awk seldla_split_seq.txt seldla_split_*.txt.ld2.ph seldla_chain.txt > seldla_chain.ph.all.txt
+```
+
+この場合、出力されるのはコンティグの両端のフェーズ情報のみ。（複数家系あるとSNPの存在した場所がずれるため、ブロックごとに単純にマージできないため）
+下記のファイルをSELDLA-Gの入力ファイルとする。
+- `seldla_chain.ph.all.txt` : -p オプションのフェーズ情報のほう
+- `seldla_split_seq.txt` : -s オプションの配列情報のほう
+ 
+### 3. HiC SALSA解析
+
+#### 3.1. Omni-Cの場合の解析例
+
+```
+#SALSAで解析するときの例
+ref=scaffolds.fasta
+fq1=reads_1.fastq
+fq2=reads_2.fastq
+
+bwa index $ref
+samtools faidx $ref
+bwa mem -t 32 $ref $fq1 $fq2 |samtools view -Sb - > output.bam
+bamToBed -i output.bam > alignment.bed
+python /Path/To/SALSA/run_pipeline.py -a $ref -l $ref.fai -b alignment.bed -e DNASE -o SALSA_output 
+#ここまでSALSAの解析例
+```
+
+SALSA_outputフォルダーの中の`scaffolds_FINAL.agp`、`alignment_iteration_1.bed`を指定すれば良い。
+
+
+
+
+## 作者の備忘録
+
+古いバージョンの時のやり方。ver. 2.3.0以降のSELDLAなら複数回実行する必要なし。
+
+### 4. SELDLA2回実行家系1つ
 
 1度目のSELDLAで十分に伸長できていない場合、その出力を使って再度実行すると良い。その場合、伸長するかどうかの閾値を一度目よりも下げておく方が良い。
 
-#### 2.1. 精子シングルセルを2回実行する場合
+#### 4.1. 精子シングルセルを2回実行する場合
 
 ```
 i=seldla_newpos_include_unoriented_in_chr.vcf
@@ -184,22 +248,10 @@ awk -F '\t' -f make_SELDLA-G_input_from_single_2run.awk seldla_split_1.txt.ld2im
 - `seldla2nd_chain.ld2imp.all.txt` : -p オプションのフェーズ情報のほう
 - `seldla_split_seq.txt` : -s オプションの配列情報のほう
 
-### 3. SELDLA2回実行家系複数
 
-RAD-seqなどの通常の連鎖解析はこれになる。単一家系でも、父方と母方の連鎖地図を統合すると思うので。上述のWGS~genotyping-by-mpileupなどでVCFを作っておく。
+### 5. SELDLA2回実行家系複数
 
-その後、family.txtとして、下記のようなファイルを作る
-
-```
-"雄親のID"\t"雌親のID"\t"子供1"\t"子供2"...
-"雌親のID"\t"雄親のID"\t"子供1"\t"子供2"...
-```
-
-これと対応するように、SNPを読み込んだあと下記の条件のサイトが解析対象となる。
-
-```
-1(ヘテロSNPとなっている場所のみが対象となる)\t-1(ホモSNPとなっている場所のみが対象となる)\t[0 or 1 or 2]\t[0 or 1 or 2]...
-```
+RAD-seqなどの通常の連鎖解析の2回実行版。
 
 1度目のSELDLA連鎖解析のコマンドは下記の通り。
 
@@ -222,7 +274,7 @@ SELDLA --exmatch 0.60 --clmatch 0.75 --spmatch 0.65 -p 0.3 -b 0.1 --NonZeroSampl
 ```
 wget https://raw.githubusercontent.com/c2997108/SELDLA-G/master/scripts/make_SELDLA-G_input_from_multi_2run.awk
 samtools faidx seldla_include_unoriented_in_chr.fasta
-awk -F '\t' -f make_SELDLA-G_input_from_multi_2run.awk seldla_split_seq.txt seldla_split_*.txt.ld2.ph seldla_include_unoriented_in_chr.fasta.fai seldla2nd_break.txt seldla_chain.txt seldla_chain.txt > seldla2nd_chain.ph.all.txt
+awk -F '\t' -f make_SELDLA-G_input_from_multi_2run.awk seldla_split_seq.txt seldla_split_*.txt.ld2.ph seldla_include_unoriented_in_chr.fasta.fai seldla2nd_break.txt seldla_chain.txt seldla2nd_chain.txt > seldla2nd_chain.ph.all.txt
 ```
 
 この場合、出力されるのはコンティグの両端のフェーズ情報のみ。（複数家系あるとSNPの存在した場所がずれるため、ブロックごとに単純にマージできないため）
@@ -230,22 +282,3 @@ awk -F '\t' -f make_SELDLA-G_input_from_multi_2run.awk seldla_split_seq.txt seld
 - `seldla2nd_chain.ph.all.txt` : -p オプションのフェーズ情報のほう
 - `seldla_split_seq.txt` : -s オプションの配列情報のほう
  
-### 4. HiC SALSA解析
-
-#### 4.1. Omni-Cの場合の解析例
-
-```
-#SALSAで解析するときの例
-ref=scaffolds.fasta
-fq1=reads_1.fastq
-fq2=reads_2.fastq
-
-bwa index $ref
-samtools faidx $ref
-bwa mem -t 32 $ref $fq1 $fq2 |samtools view -Sb - > output.bam
-bamToBed -i output.bam > alignment.bed
-python /Path/To/SALSA/run_pipeline.py -a $ref -l $ref.fai -b alignment.bed -e DNASE -o SALSA_output 
-#ここまでSALSAの解析例
-```
-
-SALSA_outputフォルダーの中の`scaffolds_FINAL.agp`、`alignment_iteration_1.bed`を指定すれば良い。
