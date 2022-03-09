@@ -21,8 +21,7 @@ https://github.com/c2997108/SELDLA-G/releases/download/v0.8.4/SELDLA-G_v0.8.4.zi
 
 #### Example 1. Omni-C
 
-The example of SALSA Analysis
-The following steps might be done on Linux.
+The example of SALSA Analysis. The following steps might be done on Linux.
 
 ```
 ref=scaffolds.fasta
