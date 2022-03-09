@@ -1,10 +1,9 @@
-
 # SELDLA-G
 
-このツールは、de novoゲノム構築時に使用する連鎖解析ツールであるhttps://github.com/c2997108/SELDLAで出力されたファイルを、Hi-Cのコンタクトマップ風に操作してエラーなどを除去しながら最終的なゲノム構築を行うツールですが、Hi-Cのコンタクトマップ編集にも使えます。
-This tool is originaly a linkage analysis tool used in de novo genome construction with the output of [SELDLA] (https://github.com/c2997108/SELDLA) to finish genome construction while removing errors by manipulating like a contact map of Hi-C. It can also be used for Hi-C contact map editing.
+このツールは、de novoゲノム構築時に使用する連鎖解析ツールであるhttps://github.com/c2997108/SELDLA
+で出力されたファイルを使って、Hi-Cのコンタクトマップ風に操作してエラーなどを除去しながら最終的なゲノム構築を行うツールです。
 
-## Install
+## インストール
 
 https://github.com/c2997108/SELDLA-G/releases/download/v0.8.4/SELDLA-G_v0.8.4.zip
 からダウンロードして、解凍する。SELDLA-Gをダブルクリックすれば実行できます。
