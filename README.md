@@ -147,6 +147,8 @@ SELDLA連鎖解析のコマンドは下記の通り。
 python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -b "-p 0.03 -b 0.03 --NonZeroSampleRate=0.05 --NonZeroPhaseRate=0.1 -r 4000 --RateOfNotNASNP=0.001 --RateOfNotNALD=0.01 --ldseqnum 3 --precleaned=pseudochr.re.fa.removedup.matrix.clean.txt_clean.txt" -d haploid pseudochr.re.fa.removedup.matrix.clean.txt_clean.txt pseudochr.re.fa.removedup.matrix.clean.txt.vcf2.family
 ```
 
+ブロックサイズを決める-rオプションは、シングルセルの場合は欠損値が多いため10個程度のSNPが集まる大きさとしたほうが良いけど、大きくしすぎると解像度が下がってブレークポイントを検出しづらくなるので、コンティグN50の1/4程度までの大きさが良いかも。
+
 #### 1.2. SELDLAの結果からSELDLA-Gの入力ファイルを作成
 
 ```
