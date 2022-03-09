@@ -39,6 +39,8 @@ Then copy SALSA_output folder to Windows and open the PowerShell or Terminal on 
 
 ```
 .\SELDLA-G.exe hic -a /path/to/SALSA_output/scaffolds_FINAL.agp -b /path/to/SALSA_output/alignment_iteration_1.bed -f /path/to/SALSA_output/assembly.cleaned.fasta
+#-w: window size (bp) [100,000]
+#-l: the limit of contig length (bp) [1,000]
 ```
 
 If you can open SALSA_output, you can see the contact map like the followings.

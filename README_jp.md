@@ -37,6 +37,8 @@ https://github.com/c2997108/SELDLA-G/releases/download/v0.8.5/SELDLA-G_v0.8.5.zi
 
 ```
 .\SELDLA-G.exe hic
+# -w: ウインドウサイズ(デフォルト100,000 bp)
+# -l: 短いコンティグを除去する閾値(デフォルト1,000 bp)
 ```
 
 <img width="618" alt="image" src="https://user-images.githubusercontent.com/5350508/156413938-06fed85e-5c3f-42c6-b348-007be7cfcd54.png">
