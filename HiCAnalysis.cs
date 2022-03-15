@@ -1280,6 +1280,8 @@ namespace SELDLA_G
 
         void openseq(string file)
         {
+            chrbpsize = new Dictionary<string, int>();
+            chrcmsize = new Dictionary<string, float>();
             contigPositions = new List<ContigPos>();
 
             //FASTAファイル読み出し
@@ -1387,22 +1389,25 @@ namespace SELDLA_G
                     {
                         var tempsb = new StringBuilder();
                         tempsb.Append(seq[phase.chrorig]);
-                        if(phase.chrorient == "+")
+                        var tempsbNA = new StringBuilder();
+                        tempsbNA.Append(seq[phase.chrorig]);
+                        if (phase.chrorient == "+")
                         {
                             extendedSeq.Add(phase.chr2nd, tempsb);
-                            extendedSeqNAexcludedChr.Add(phase.chr2nd, tempsb);
+                            extendedSeqNAexcludedChr.Add(phase.chr2nd, tempsbNA);
                         }
-                        else if(phase.chrorient == "-")
+                        else if (phase.chrorient == "-")
                         {
                             string revseq = getRevComp(tempsb.ToString());
                             extendedSeq.Add(phase.chr2nd, new StringBuilder(revseq));
-                            extendedSeqNAexcludedChr.Add(phase.chr2nd, new StringBuilder(revseq));
+                            string revseqNA = getRevComp(tempsbNA.ToString());
+                            extendedSeqNAexcludedChr.Add(phase.chr2nd, new StringBuilder(revseqNA));
                         }
                         else //"na"
                         {
                             extendedSeq.Add(phase.chr2nd, tempsb);
-                            extendedSeqNAexcludedChr.Add(phase.chr2nd, getNstr(tempsb.Length));
-                            extendedSeqNAexcludedChr.Add(phase.chr2nd+"_related_"+phase.chrorig, tempsb);
+                            extendedSeqNAexcludedChr.Add(phase.chr2nd, getNstr(tempsbNA.Length));
+                            extendedSeqNAexcludedChr.Add(phase.chr2nd + "_related_" + phase.chrorig, tempsbNA);
                         }
                     }
                     else
