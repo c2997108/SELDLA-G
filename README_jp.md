@@ -5,7 +5,7 @@
 
 ## インストール
 
-https://github.com/c2997108/SELDLA-G/releases/download/v0.8.5/SELDLA-G_v0.8.5.zip
+https://github.com/c2997108/SELDLA-G/releases
 からダウンロードして、解凍する。SELDLA-Gをダブルクリックすれば実行できます。
 
 ## 動作環境
