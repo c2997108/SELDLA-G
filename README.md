@@ -7,7 +7,7 @@ This tool is originaly a linkage analysis tool used in de novo genome constructi
 ## Install
 
 You can download the binary from the following link and unzip.
-https://github.com/c2997108/SELDLA-G/releases/download/v0.8.5/SELDLA-G_v0.8.5.zip
+https://github.com/c2997108/SELDLA-G/releases
 
 ## Requirements
 
