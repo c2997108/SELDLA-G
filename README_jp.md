@@ -25,6 +25,10 @@ https://github.com/c2997108/SELDLA-G/releases
 - .NET Core 3.1 Runtime (v3.1)
 - Visual Studio 2022 (.NET 6)
 
+## 変更履歴
+
+- 0.8.6 FASTAファイル出力時に重複していたバグを修正
+ 
 ## 使用方法
 
 ### 連鎖解析モード
