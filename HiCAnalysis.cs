@@ -13,6 +13,7 @@ using ILGPU.Runtime.OpenCL;
 using SkiaSharp;
 using System.Text;
 using Mono.Options;
+using System.Collections;
 
 namespace SELDLA_G
 {
@@ -33,9 +34,11 @@ namespace SELDLA_G
         double worldW = 1;
         Point? lastPos;
         Point stage = new Point(0, 0);
-        float[,] distphase3;
+        int[,] countmatrix;  //カウントのRAWデータが入っている
+        float[,] distphase3; //log10{windowごとのリード数*(windowサイズ/実際のwindowのサイズ[コンティグの端は既定のwindowサイズが取れないため、その補正])}
+                             //               / log10(全てのwindowの中で最大のリード数)
         int num_markers;
-        List<PhaseData> myphaseData;
+        List<PhaseData> myphaseData; //Window単位でのコンティグ、chr情報が入っている。
         string[] myheader;
         Dictionary<string, List<int>> myfamily = new Dictionary<string, List<int>>();
         MarkerPos pos1 = new MarkerPos();
@@ -76,7 +79,6 @@ namespace SELDLA_G
         //string fileBED = @"E:\download\alignment_iteration_1.bed";
         //string fileCalculated = "hic_output.matrix";
         string fileCalculated = "tombo0302.matrix";
-        int[,] countmatrix;
         float color_fold = 3;
         float[,] backdistphase3;
         int[,] backcountmatrix;
@@ -239,7 +241,7 @@ namespace SELDLA_G
                 var items = line.Split("\t");
                 if (items.Length == 4)
                 {
-                    tempreadname = items[3].Substring(0, items[3].Length - 1);
+                    tempreadname = items[3].Substring(0, items[3].Length - 1); //SALSAの出力でリードのF, Rで/1, /2となっているので、最後の1文字を削除。
                     tempreadfs = items[3].Substring(items[3].Length - 1);
                     if (tempreadname == oldreadname)
                     {
@@ -388,8 +390,8 @@ namespace SELDLA_G
             whiteRectangle = new Texture2D(GraphicsDevice, 1, 1);
             whiteRectangle.SetData(new[] { Color.White });
 
-            openFileBED(fileAGP, fileBED);
-            //openFileCalculated(fileAGP, fileCalculated);
+            //openFileBED(fileAGP, fileBED);
+            openFileCalculated(fileAGP, fileCalculated);
 
             texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
             setDistTexture();
@@ -476,7 +478,7 @@ namespace SELDLA_G
             canvas.Clear(SKColors.White);
             canvas.DrawText("[Up]      Block number: "+pos1.X +", Chr: "+myphaseData[pos1.X].chr2nd+", Contig name: "+ myphaseData[pos1.X].chrorig+", Contig orientation: "+myphaseData[pos1.X].chrorient+", Marker position: "+myphaseData[pos1.X].markerpos, 10, 25, paintPop);
             canvas.DrawText("[Down] Block number: " + pos2.X + ", Chr: " + myphaseData[pos2.X].chr2nd + ", Contig name: " + myphaseData[pos2.X].chrorig + ", Contig orientation: " + myphaseData[pos2.X].chrorient + ", Marker position: " + myphaseData[pos2.X].markerpos, 10, 50, paintPop);
-            canvas.DrawText("Phase identity: " +distphase3[pos1.X, pos2.X], 10, 75, paintPop);
+            canvas.DrawText("log10(Reads)/log10(Max Reads): " +distphase3[pos1.X, pos2.X], 10, 75, paintPop);
             canvas.Flush();
             texturePop.SetData(bitmap.Bytes);
 
@@ -513,6 +515,18 @@ namespace SELDLA_G
             {
                 System.Diagnostics.Debug.WriteLine("No Keys pressed");
                 changing = false;
+            }
+
+            if (state.IsKeyDown(Keys.D1) && changing == false)
+            {
+                changing = true;
+
+                backupdata();
+
+                updateDistanceByAuto();
+
+                updatePhaseIndex();
+                setDistTexture();
             }
 
             if (state.IsKeyDown(Keys.Z) && changing == false)
@@ -1803,6 +1817,314 @@ namespace SELDLA_G
             }
             return tempmyphaseData;
         }
+        void updateDistanceByAuto()
+        {
+            int num = 30;
+            string sep = "##SELDLA##";
+            //染色体端の値にアクセスしやすいように連想配列を作る
+            Dictionary<string, CountBox> boxOfEdges = new Dictionary<string, CountBox>();
+            for (int i = 0; i < num_markers; i++)
+            {
+                if (!boxOfEdges.ContainsKey(myphaseData[i].chr2nd))
+                {
+                    boxOfEdges.Add(myphaseData[i].chr2nd, new CountBox());
+                }
+                boxOfEdges[myphaseData[i].chr2nd].addItem(i);
+            }
+            
+            //染色体端間のリード数割合の平均値を計算する。染色体間のリード数割合は["chr1##SELDLA##chr2"]などのキーで取得する
+            List<string> tempChrNames = new List<string>();
+            myphaseData.ForEach(phaseData => tempChrNames.Add(phaseData.chr2nd));
+            var ForFor = new Dictionary<string, float>();
+            var ForBac = new Dictionary<string, float>();
+            var BacFor = new Dictionary<string, float>();
+            var BacBac = new Dictionary<string, float>();
+            //tempChrNames.Distinct().AsParallel().ForAll(chrName => { //並列で処理しようとすると、Dictionaryに値を入れるときにエラーになる
+            tempChrNames.Distinct().ToList().ForEach(chrName => {
+                List<int> x1s = boxOfEdges[chrName].getFirstPositions(num);
+                List<int> x2s = boxOfEdges[chrName].getLastPositions(num);
+
+                tempChrNames.Distinct().ToList().ForEach(chrName2 =>
+                {
+                    if(chrName != chrName2)
+                    {
+                        List<int> y1s;
+                        List<int> y2s;
+                        y1s = boxOfEdges[chrName2].getFirstPositions(num);
+                        y2s = boxOfEdges[chrName2].getLastPositions(num);
+                        int tempn;
+                        float tempval;
+
+                        tempn = 0;
+                        tempval = 0;
+                        x1s.ForEach(x =>
+                        {
+                            y1s.ForEach(y =>
+                            {
+                                tempn++;
+                                tempval += distphase3[x, y];
+                            });
+                        });
+                        ForFor[chrName + sep + chrName2] = tempval / tempn;
+                        ForFor[chrName2 + sep + chrName] = tempval / tempn;
+
+                        tempn = 0;
+                        tempval = 0;
+                        x1s.ForEach(x =>
+                        {
+                            y2s.ForEach(y =>
+                            {
+                                tempn++;
+                                tempval += distphase3[x, y];
+                            });
+                        });
+                        ForBac[chrName + sep + chrName2] = tempval / tempn;
+                        BacFor[chrName2 + sep + chrName] = tempval / tempn; //BacForは結局ForBacで先に検索されてしまうので、無くても問題ないみたい
+
+                        tempn = 0;
+                        tempval = 0;
+                        x2s.ForEach(x =>
+                        {
+                            y1s.ForEach(y =>
+                            {
+                                tempn++;
+                                tempval += distphase3[x, y];
+                            });
+                        });
+                        BacFor[chrName + sep + chrName2] = tempval / tempn; //BacForは結局ForBacで先に検索されてしまうので、無くても問題ないみたい
+                        ForBac[chrName2 + sep + chrName] = tempval / tempn;
+
+                        tempn = 0;
+                        tempval = 0;
+                        x2s.ForEach(x =>
+                        {
+                            y2s.ForEach(y =>
+                            {
+                                tempn++;
+                                tempval += distphase3[x, y];
+                            });
+                        });
+                        BacBac[chrName + sep + chrName2] = tempval / tempn;
+                        BacBac[chrName2 + sep + chrName] = tempval / tempn;
+                    }
+                });
+            });
+
+            //値の高い染色体から順にくっつけていく。
+            MaxRelation maxRelation = new MaxRelation(ForFor, ForBac, BacFor, BacBac);
+
+            Dictionary<string, string> connectedMap = new Dictionary<string, string>();
+            int countconnected = 0;
+            int totalchrs = tempChrNames.Distinct().Count();
+            for (int i = 0; i < totalchrs * totalchrs * 4; i++) //forfor, forbac, bacfor, bacbacの4種類を全て見る
+            {
+                if (!maxRelation.isEmpty())
+                {
+                    var (key, fr, val) = maxRelation.getTopRelation();
+                    var chrs = key.Split(sep);
+                    if (checkLoop(chrs[0], chrs[1], connectedMap, sep)) //ループになって繋がるとダメなので、それは避ける
+                    {
+                        maxRelation.getTopRelationAndDelete();
+                        countconnected++;
+                        Console.WriteLine(countconnected + "/" + totalchrs + " : " + val + ": " + chrs[0] + " " + chrs[1] + " " + fr);
+                        if (fr == 0) //ForFor
+                        {
+                            connectedMap[chrs[0] + sep + "f"] = chrs[1] + sep + "f";
+                            connectedMap[chrs[1] + sep + "f"] = chrs[0] + sep + "f";
+                        }
+                        else if (fr == 1) //ForBac
+                        {
+                            connectedMap[chrs[0] + sep + "f"] = chrs[1] + sep + "r";
+                            connectedMap[chrs[1] + sep + "r"] = chrs[0] + sep + "f";
+                        }
+                        else if (fr == 2) //結局BacForの出番はなさそう
+                        {
+                            connectedMap[chrs[0] + sep + "r"] = chrs[1] + sep + "f";
+                            connectedMap[chrs[1] + sep + "f"] = chrs[0] + sep + "r";
+                        }
+                        else //BacBac
+                        {
+                            connectedMap[chrs[0] + sep + "r"] = chrs[1] + sep + "r";
+                            connectedMap[chrs[1] + sep + "r"] = chrs[0] + sep + "r";
+                        }
+                    }
+                    else
+                    {
+                        maxRelation.deleteOnlyTop();
+                    }
+                }
+            }
+
+            //全体の並び順を決める 前側
+            string keychr;
+            Console.WriteLine("start with: "+myphaseData[0].chr2nd);
+            Console.WriteLine("Forward...");
+            Stack<string> chrforstack = new Stack<string>();
+            keychr = myphaseData[0].chr2nd+sep+"f";
+            for (int i = 0; i < totalchrs; i++)
+            {
+                if (connectedMap.ContainsKey(keychr))
+                {
+                    var tempstr = connectedMap[keychr].Split(sep);
+                    string tempfr = tempstr[1];
+                    Console.WriteLine(i+1+": "+tempstr[0]);
+                    if (tempfr == "f")
+                    {
+                        keychr = tempstr[0] + sep + "r";
+                        chrforstack.Push(tempstr[0] + sep + "rev");
+                    }
+                    else
+                    {
+                        keychr = tempstr[0] + sep + "f";
+                        chrforstack.Push(tempstr[0] + sep + "for");
+                    }
+                }
+            }
+            //全体の並び順を決める 後ろ側
+            Console.WriteLine("Backward...");
+            Queue<string> chrbacque = new Queue<string>();
+            keychr = myphaseData[0].chr2nd + sep + "r";
+            for (int i = 0; i < totalchrs; i++)
+            {
+                if (connectedMap.ContainsKey(keychr))
+                {
+                    var tempstr = connectedMap[keychr].Split(sep);
+                    string tempfr = tempstr[1];
+                    Console.WriteLine(i+1 + ": " + tempstr[0]);
+                    if (tempfr == "f")
+                    {
+                        keychr = tempstr[0] + sep + "r";
+                        chrbacque.Enqueue(tempstr[0] + sep + "for");
+                    }
+                    else
+                    {
+                        keychr = tempstr[0] + sep + "f";
+                        chrbacque.Enqueue(tempstr[0] + sep + "rev");
+                    }
+                }
+            }
+
+            //新しい座標を決める
+            //前半
+            List<int> newOrder = new List<int>();
+            List<int> tempList;
+            List<string> tempChrNamesAdded = new List<string>();
+            while (chrforstack.Count > 0)
+            {
+                var key = chrforstack.Pop();
+                var chrs = key.Split(sep);
+                tempChrNamesAdded.Add(chrs[0]);
+                if (chrs[1] == "for")
+                {
+                    tempList = boxOfEdges[chrs[0]].getFirstPositions(boxOfEdges[chrs[0]].getNum());
+                }
+                else
+                {
+                    tempList = boxOfEdges[chrs[0]].getLastPositions(boxOfEdges[chrs[0]].getNum());
+                }
+                for (int i = 0; i < tempList.Count; i++)
+                {
+                    newOrder.Add(tempList[i]);
+                }
+            }
+            //最初の染色体
+            tempChrNamesAdded.Add(myphaseData[0].chr2nd);
+            tempList = boxOfEdges[myphaseData[0].chr2nd].getFirstPositions(boxOfEdges[myphaseData[0].chr2nd].getNum());
+            for (int i = 0; i < tempList.Count; i++)
+            {
+                newOrder.Add(tempList[i]);
+            }
+            //後半
+            while (chrbacque.Count > 0)
+            {
+                var key = chrbacque.Dequeue();
+                var chrs = key.Split(sep);
+                tempChrNamesAdded.Add(chrs[0]);
+                if (chrs[1] == "for")
+                {
+                    tempList = boxOfEdges[chrs[0]].getFirstPositions(boxOfEdges[chrs[0]].getNum());
+                }
+                else
+                {
+                    tempList = boxOfEdges[chrs[0]].getLastPositions(boxOfEdges[chrs[0]].getNum());
+                }
+                for (int i = 0; i < tempList.Count; i++)
+                {
+                    newOrder.Add(tempList[i]);
+                }
+            }
+            //最後の1chromosomeはループ判定でカットされてしまうので、それを最後に追加
+            tempChrNames.Distinct().ToList().ForEach(x =>
+            {
+                if (!tempChrNamesAdded.Contains(x))
+                {
+                    Console.WriteLine("Last contig: " + x);
+                    tempList = boxOfEdges[x].getFirstPositions(boxOfEdges[x].getNum());
+                    for (int i = 0; i < tempList.Count; i++)
+                    {
+                        newOrder.Add(tempList[i]);
+                    }
+                }
+            });
+
+            //順番にしたがって、distphase3, countmatrix, myphaseDataを並び替える
+
+            int[,] new_countmatrix = new int[num_markers, num_markers];
+            float[,] new_distphase3 = new float[num_markers, num_markers];
+            List<PhaseData> new_myphaseData = new List<PhaseData>();
+            
+            for(int i = 0; i < num_markers; i++)
+            {
+                //Console.WriteLine(newOrder[i]);
+                new_myphaseData.Add(myphaseData[newOrder[i]]);
+                for(int j = 0; j < num_markers; j++)
+                {
+                    new_distphase3[i, j] = distphase3[newOrder[i], newOrder[j]];
+                    new_countmatrix[i, j] = countmatrix[newOrder[i], newOrder[j]];
+                }
+            }
+
+            countmatrix = new_countmatrix;
+            distphase3 = new_distphase3;
+            myphaseData = new_myphaseData;
+        }
+
+        bool checkLoop(string chr1, string chr2, Dictionary<string, string> connectedMap, string sep)
+        {
+            if (checkLoopKey(chr1+sep+"f",chr2,connectedMap,sep)&&checkLoopKey(chr1+sep+"r",chr2,connectedMap, sep))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+            
+        }
+        bool checkLoopKey(string key1, string chr2, Dictionary<string, string> connectedMap, string sep)
+        {
+            if (!connectedMap.ContainsKey(key1))
+            {
+                return true;
+            }
+            else
+            {
+                var temp = connectedMap[key1].Split(sep);
+                if (temp[0] == chr2)
+                {
+                    return false;
+                }
+                if (temp[1] == "f")
+                {
+                    return checkLoopKey(temp[0] + sep + "r", chr2, connectedMap, sep);
+                }
+                else
+                {
+                    return checkLoopKey(temp[0] + sep + "f", chr2, connectedMap, sep);
+                }
+            }
+        }
+
         void updateDistanceReverse(int areaStart, int areaEnd)
         {
             System.Threading.Tasks.Parallel.For(0, num_markers, j => {
