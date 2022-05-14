@@ -2053,7 +2053,7 @@ namespace SELDLA_G
                     newOrder.Add(tempList[i]);
                 }
             }
-            //最後の1chromosomeはループ判定でカットされてしまうので、それを最後に追加
+            /*//最後の1chromosomeはループ判定でカットされてしまうので、それを最後に追加 -> カットされることはなかった
             tempChrNames.Distinct().ToList().ForEach(x =>
             {
                 if (!tempChrNamesAdded.Contains(x))
@@ -2065,7 +2065,7 @@ namespace SELDLA_G
                         newOrder.Add(tempList[i]);
                     }
                 }
-            });
+            });*/
 
             //順番にしたがって、distphase3, countmatrix, myphaseDataを並び替える
 
