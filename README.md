@@ -70,4 +70,4 @@ Press the following keys to load, edit, and save.
 - Z : Cancel the previous operation only once.
 - C : Save temporarily in memory.
 - V : Recall data temporarily stored in memory
-
+- 1 : Automatically reorder chromosomes that are in contact with each other in close proximity
