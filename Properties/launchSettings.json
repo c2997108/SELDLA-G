@@ -23,6 +23,10 @@
     "hic-hata": {
       "commandName": "Project",
       "commandLineArgs": "hic -a hata-original.agp -m hata-original.matrix -f hata-original.fasta"
+    },
+    "hic-hata3": {
+      "commandName": "Project",
+      "commandLineArgs": "hic -a hata3.agp -m hata3.matrix -f hata-original.fasta"
     }
   }
 }

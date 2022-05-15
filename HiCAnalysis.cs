@@ -535,12 +535,16 @@ namespace SELDLA_G
 
                 if (backmyphaseData.Count > 0)
                 {
-                    myphaseData = backmyphaseData;
-                    countmatrix = backcountmatrix;
-                    distphase3 = backdistphase3;
+                    myphaseData = new List<PhaseData>();
+                    for (int i = 0; i < backmyphaseData.Count; i++)
+                    {
+                        myphaseData.Add(backmyphaseData[i].DeepCopy());
+                    }
+                    countmatrix = backcountmatrix.Clone() as int[,];
+                    distphase3 = backdistphase3.Clone() as float[,];
                     num_markers = myphaseData.Count;
                     texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
-                    backmyphaseData = new List<PhaseData>();
+                    //backmyphaseData = new List<PhaseData>();
                     setDistTexture();
                 }
             }
@@ -556,13 +560,17 @@ namespace SELDLA_G
 
                 if (savedmyphaseData.Count > 0)
                 {
-                    myphaseData = savedmyphaseData;
-                    countmatrix = backcountmatrix;
-                    distphase3 = saveddistphase3;
+                    myphaseData = new List<PhaseData>();
+                    for (int i = 0; i < savedmyphaseData.Count; i++)
+                    {
+                        myphaseData.Add(savedmyphaseData[i].DeepCopy());
+                    }
+                    countmatrix = savedcountmatrix.Clone() as int[,];
+                    distphase3 = saveddistphase3.Clone() as float[,];
                     num_markers = myphaseData.Count;
                     texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
-                    savedmyphaseData = new List<PhaseData>();
-                    tempsavedata();
+                    //savedmyphaseData = new List<PhaseData>();
+                    //tempsavedata();
                     setDistTexture();
                 }
             }
@@ -2053,19 +2061,6 @@ namespace SELDLA_G
                     newOrder.Add(tempList[i]);
                 }
             }
-            /*//最後の1chromosomeはループ判定でカットされてしまうので、それを最後に追加 -> カットされることはなかった
-            tempChrNames.Distinct().ToList().ForEach(x =>
-            {
-                if (!tempChrNamesAdded.Contains(x))
-                {
-                    Console.WriteLine("Last contig: " + x);
-                    tempList = boxOfEdges[x].getFirstPositions(boxOfEdges[x].getNum());
-                    for (int i = 0; i < tempList.Count; i++)
-                    {
-                        newOrder.Add(tempList[i]);
-                    }
-                }
-            });*/
 
             //順番にしたがって、distphase3, countmatrix, myphaseDataを並び替える
 
