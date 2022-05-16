@@ -138,9 +138,9 @@ namespace SELDLA_G
         public (string, int, float) getTopRelation()
         {
             if (sortedForFor.Count > 0
-                && (sortedForBac.Count > 0 && sortedForFor[0].Value >= sortedForBac[0].Value)
-                && (sortedBacFor.Count > 0 && sortedForFor[0].Value >= sortedBacFor[0].Value)
-                && (sortedBacBac.Count > 0 && sortedForFor[0].Value >= sortedBacBac[0].Value))
+                && ((sortedForBac.Count > 0 && sortedForFor[0].Value >= sortedForBac[0].Value) || sortedForBac.Count == 0)
+                && ((sortedBacFor.Count > 0 && sortedForFor[0].Value >= sortedBacFor[0].Value) || sortedBacFor.Count == 0)
+                && ((sortedBacBac.Count > 0 && sortedForFor[0].Value >= sortedBacBac[0].Value) || sortedBacBac.Count == 0))
             {
                 string result = sortedForFor[0].Key;
                 float value = sortedForFor[0].Value;
@@ -148,15 +148,16 @@ namespace SELDLA_G
                 return (result, 0, value);
             }
             else if (sortedForBac.Count > 0
-                && (sortedBacFor.Count > 0 && sortedForBac[0].Value >= sortedBacFor[0].Value)
-                && (sortedBacBac.Count > 0 && sortedForBac[0].Value >= sortedBacBac[0].Value))
+                && ((sortedBacFor.Count > 0 && sortedForBac[0].Value >= sortedBacFor[0].Value) || sortedBacFor.Count == 0)
+                && ((sortedBacBac.Count > 0 && sortedForBac[0].Value >= sortedBacBac[0].Value) || sortedBacBac.Count == 0))
             {
                 string result = sortedForBac[0].Key;
                 float value = sortedForBac[0].Value;
                 var list = sortedForBac[0].Key.Split(sep);
                 return (result, 1, value);
             }
-            else if (sortedBacFor.Count > 0 && sortedBacBac.Count > 0 && sortedBacFor[0].Value >= sortedBacBac[0].Value)
+            else if (sortedBacFor.Count > 0
+                && ((sortedBacBac.Count > 0 && sortedBacFor[0].Value >= sortedBacBac[0].Value) || sortedBacBac.Count == 0))
             {
                 string result = sortedBacFor[0].Key;
                 float value = sortedBacFor[0].Value;
@@ -174,19 +175,20 @@ namespace SELDLA_G
         public void deleteOnlyTop()
         {
             if (sortedForFor.Count > 0
-                && (sortedForBac.Count > 0 && sortedForFor[0].Value >= sortedForBac[0].Value)
-                && (sortedBacFor.Count > 0 && sortedForFor[0].Value >= sortedBacFor[0].Value)
-                && (sortedBacBac.Count > 0 && sortedForFor[0].Value >= sortedBacBac[0].Value))
+                && ((sortedForBac.Count > 0 && sortedForFor[0].Value >= sortedForBac[0].Value) || sortedForBac.Count == 0)
+                && ((sortedBacFor.Count > 0 && sortedForFor[0].Value >= sortedBacFor[0].Value) || sortedBacFor.Count == 0)
+                && ((sortedBacBac.Count > 0 && sortedForFor[0].Value >= sortedBacBac[0].Value) || sortedBacBac.Count == 0))
             {
                 sortedForFor.RemoveAt(0);
             }
             else if (sortedForBac.Count > 0
-                && (sortedBacFor.Count > 0 && sortedForBac[0].Value >= sortedBacFor[0].Value)
-                && (sortedBacBac.Count > 0 && sortedForBac[0].Value >= sortedBacBac[0].Value))
+                && ((sortedBacFor.Count > 0 && sortedForBac[0].Value >= sortedBacFor[0].Value) || sortedBacFor.Count == 0)
+                && ((sortedBacBac.Count > 0 && sortedForBac[0].Value >= sortedBacBac[0].Value) || sortedBacBac.Count == 0))
             {
                 sortedForBac.RemoveAt(0);
             }
-            else if (sortedBacFor.Count > 0 && sortedBacBac.Count > 0 && sortedBacFor[0].Value >= sortedBacBac[0].Value)
+            else if (sortedBacFor.Count > 0
+                && ((sortedBacBac.Count > 0 && sortedBacFor[0].Value >= sortedBacBac[0].Value) || sortedBacBac.Count == 0))
             {
                 sortedBacFor.RemoveAt(0);
             }
@@ -197,10 +199,10 @@ namespace SELDLA_G
         }
         public (string, int, float) getTopRelationAndDelete()
         {
-            if( sortedForFor.Count > 0
-                && (sortedForBac.Count > 0 && sortedForFor[0].Value>=sortedForBac[0].Value)
-                && (sortedBacFor.Count > 0 && sortedForFor[0].Value >= sortedBacFor[0].Value)
-                && (sortedBacBac.Count > 0 && sortedForFor[0].Value >= sortedBacBac[0].Value) )
+            if (sortedForFor.Count > 0
+                && ((sortedForBac.Count > 0 && sortedForFor[0].Value >= sortedForBac[0].Value) || sortedForBac.Count == 0)
+                && ((sortedBacFor.Count > 0 && sortedForFor[0].Value >= sortedBacFor[0].Value) || sortedBacFor.Count == 0)
+                && ((sortedBacBac.Count > 0 && sortedForFor[0].Value >= sortedBacBac[0].Value) || sortedBacBac.Count == 0))
             {
                 string result = sortedForFor[0].Key;
                 float value = sortedForFor[0].Value;
@@ -210,8 +212,8 @@ namespace SELDLA_G
                 return (result, 0, value);
             }
             else if( sortedForBac.Count > 0
-                && (sortedBacFor.Count > 0 && sortedForBac[0].Value >= sortedBacFor[0].Value)
-                && (sortedBacBac.Count > 0 &&sortedForBac[0].Value >= sortedBacBac[0].Value) )
+                && ((sortedBacFor.Count > 0 && sortedForBac[0].Value >= sortedBacFor[0].Value) || sortedBacFor.Count == 0)
+                && ((sortedBacBac.Count > 0 && sortedForBac[0].Value >= sortedBacBac[0].Value) || sortedBacBac.Count == 0))
             {
                 string result = sortedForBac[0].Key;
                 float value = sortedForBac[0].Value;
@@ -220,7 +222,8 @@ namespace SELDLA_G
                 deleteBac(list[1]);
                 return (result, 1, value);
             }
-            else if(sortedBacFor.Count > 0 && sortedBacBac.Count > 0 && sortedBacFor[0].Value >= sortedBacBac[0].Value)
+            else if (sortedBacFor.Count > 0
+                && ((sortedBacBac.Count > 0 && sortedBacFor[0].Value >= sortedBacBac[0].Value) || sortedBacBac.Count == 0))
             {
                 string result = sortedBacFor[0].Key;
                 float value = sortedBacFor[0].Value;

@@ -663,11 +663,15 @@ namespace SELDLA_G
 
                 if (backmyphaseData.Count > 0)
                 {
-                    myphaseData = backmyphaseData;
-                    distphase3 = backdistphase3;
+                    myphaseData = new List<PhaseData>();
+                    for (int i = 0; i < backmyphaseData.Count; i++)
+                    {
+                        myphaseData.Add(backmyphaseData[i].DeepCopy());
+                    }
+                    distphase3 = backdistphase3.Clone() as float[,];
                     num_markers = myphaseData.Count;
                     texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
-                    backmyphaseData = new List<PhaseData>();
+                    //backmyphaseData = new List<PhaseData>();
                     setDistTexture();
                 }
             }
@@ -683,12 +687,16 @@ namespace SELDLA_G
 
                 if (savedmyphaseData.Count > 0)
                 {
-                    myphaseData = savedmyphaseData;
-                    distphase3 = saveddistphase3;
+                    myphaseData = new List<PhaseData>();
+                    for (int i = 0; i < savedmyphaseData.Count; i++)
+                    {
+                        myphaseData.Add(savedmyphaseData[i].DeepCopy());
+                    }
+                    distphase3 = saveddistphase3.Clone() as float[,];
                     num_markers = myphaseData.Count;
                     texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
-                    savedmyphaseData = new List<PhaseData>();
-                    tempsavedata();
+                    //savedmyphaseData = new List<PhaseData>();
+                    //tempsavedata();
                     setDistTexture();
                 }
             }

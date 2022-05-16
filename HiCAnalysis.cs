@@ -520,11 +520,71 @@ namespace SELDLA_G
             if (state.IsKeyDown(Keys.D1) && changing == false)
             {
                 changing = true;
-
                 backupdata();
+                updateDistanceByAuto(30);
+                updatePhaseIndex();
+                setDistTexture();
+            }
 
-                updateDistanceByAuto();
+            if (state.IsKeyDown(Keys.D2) && changing == false)
+            {
+                changing = true;
+                backupdata();
+                updateDistanceByAuto(100);
+                updatePhaseIndex();
+                setDistTexture();
+            }
 
+            if (state.IsKeyDown(Keys.D3) && changing == false)
+            {
+                changing = true;
+                backupdata();
+                updateDistanceByAuto(300);
+                updatePhaseIndex();
+                setDistTexture();
+            }
+
+            if (state.IsKeyDown(Keys.D4) && changing == false)
+            {
+                changing = true;
+                backupdata();
+                updateDistanceByAuto(1000);
+                updatePhaseIndex();
+                setDistTexture();
+            }
+
+            if (state.IsKeyDown(Keys.D6) && changing == false)
+            {
+                changing = true;
+                backupdata();
+                updateDistanceByAutoContig(myphaseData[pos1.X].chr2nd, 30);
+                updatePhaseIndex();
+                setDistTexture();
+            }
+
+            if (state.IsKeyDown(Keys.D6) && changing == false)
+            {
+                changing = true;
+                backupdata();
+                updateDistanceByAutoContig(myphaseData[pos1.X].chr2nd, 100);
+                updatePhaseIndex();
+                setDistTexture();
+            }
+
+            if (state.IsKeyDown(Keys.D6) && changing == false)
+            {
+                changing = true;
+                backupdata();
+                updateDistanceByAutoContig(myphaseData[pos1.X].chr2nd, 300);
+                updatePhaseIndex();
+                setDistTexture();
+            }
+
+            if (state.IsKeyDown(Keys.D6) && changing == false)
+            {
+                changing = true;
+                backupdata();
+                updateDistanceByAutoContig(myphaseData[pos1.X].chr2nd, 1000);
                 updatePhaseIndex();
                 setDistTexture();
             }
@@ -1825,9 +1885,9 @@ namespace SELDLA_G
             }
             return tempmyphaseData;
         }
-        void updateDistanceByAuto()
+        void updateDistanceByAuto(int num)
         {
-            int num = 30;
+            //int num = 30;
             string sep = "##SELDLA##";
             //染色体端の値にアクセスしやすいように連想配列を作る
             Dictionary<string, CountBox> boxOfEdges = new Dictionary<string, CountBox>();
@@ -1849,17 +1909,27 @@ namespace SELDLA_G
             var BacBac = new Dictionary<string, float>();
             //tempChrNames.Distinct().AsParallel().ForAll(chrName => { //並列で処理しようとすると、Dictionaryに値を入れるときにエラーになる
             tempChrNames.Distinct().ToList().ForEach(chrName => {
-                List<int> x1s = boxOfEdges[chrName].getFirstPositions(num);
-                List<int> x2s = boxOfEdges[chrName].getLastPositions(num);
+                int num_x = num;
+                if (boxOfEdges[chrName].getNum() < num)
+                {
+                    num_x = (int)((boxOfEdges[chrName].getNum()+1) / 2);
+                }
+                List<int> x1s = boxOfEdges[chrName].getFirstPositions(num_x);
+                List<int> x2s = boxOfEdges[chrName].getLastPositions(num_x);
 
                 tempChrNames.Distinct().ToList().ForEach(chrName2 =>
                 {
                     if(chrName != chrName2)
                     {
+                        int num_y = num;
+                        if (boxOfEdges[chrName2].getNum() < num)
+                        {
+                            num_y = (int)((boxOfEdges[chrName2].getNum() + 1) / 2);
+                        }
                         List<int> y1s;
                         List<int> y2s;
-                        y1s = boxOfEdges[chrName2].getFirstPositions(num);
-                        y2s = boxOfEdges[chrName2].getLastPositions(num);
+                        y1s = boxOfEdges[chrName2].getFirstPositions(num_y);
+                        y2s = boxOfEdges[chrName2].getLastPositions(num_y);
                         int tempn;
                         float tempval;
 
@@ -2017,6 +2087,7 @@ namespace SELDLA_G
             List<int> newOrder = new List<int>();
             List<int> tempList;
             List<string> tempChrNamesAdded = new List<string>();
+            List<string> tempContigOrient = new List<string>();
             while (chrforstack.Count > 0)
             {
                 var key = chrforstack.Pop();
@@ -2033,6 +2104,7 @@ namespace SELDLA_G
                 for (int i = 0; i < tempList.Count; i++)
                 {
                     newOrder.Add(tempList[i]);
+                    tempContigOrient.Add(chrs[1]);
                 }
             }
             //最初の染色体
@@ -2041,6 +2113,7 @@ namespace SELDLA_G
             for (int i = 0; i < tempList.Count; i++)
             {
                 newOrder.Add(tempList[i]);
+                tempContigOrient.Add("for");
             }
             //後半
             while (chrbacque.Count > 0)
@@ -2059,6 +2132,7 @@ namespace SELDLA_G
                 for (int i = 0; i < tempList.Count; i++)
                 {
                     newOrder.Add(tempList[i]);
+                    tempContigOrient.Add(chrs[1]);
                 }
             }
 
@@ -2072,12 +2146,344 @@ namespace SELDLA_G
             {
                 //Console.WriteLine(newOrder[i]);
                 new_myphaseData.Add(myphaseData[newOrder[i]]);
-                for(int j = 0; j < num_markers; j++)
+                if(tempContigOrient[i] != "for") //コンティグの向きの情報は自動で反転しないので、revの場合反転させる
+                {
+                    if (new_myphaseData[i].chrorient == "+")
+                    {
+                        new_myphaseData[i].chrorient = "-";
+                    }
+                    else if (new_myphaseData[i].chrorient == "-")
+                    {
+                        new_myphaseData[i].chrorient = "+";
+                    }
+                    else // "na"
+                    {
+                        new_myphaseData[i].chrorient = "na";
+                    }
+                }
+            }
+
+            System.Threading.Tasks.Parallel.For(0, num_markers, i => {
+                for (int j = 0; j < num_markers; j++)
                 {
                     new_distphase3[i, j] = distphase3[newOrder[i], newOrder[j]];
                     new_countmatrix[i, j] = countmatrix[newOrder[i], newOrder[j]];
                 }
+            });
+
+            countmatrix = new_countmatrix;
+            distphase3 = new_distphase3;
+            myphaseData = new_myphaseData;
+        }
+
+        void updateDistanceByAutoContig(string chrToOrder, int num)
+        {
+            //int num = 30;
+            string sep = "##SELDLA##";
+            //コンティグ端の値にアクセスしやすいように連想配列を作る
+            Dictionary<string, CountBox> boxOfEdges = new Dictionary<string, CountBox>();
+            List<int> contigsInChr = new List<int>();
+            List<string> tempContigNames = new List<string>();
+            int firstContigId = -1;
+            for (int i = 0; i < num_markers; i++)
+            {
+                if (myphaseData[i].chr2nd == chrToOrder)
+                {
+                    if (firstContigId == -1) firstContigId = i;
+                    contigsInChr.Add(i);
+                    tempContigNames.Add(myphaseData[i].chrorig);
+
+                    if (!boxOfEdges.ContainsKey(myphaseData[i].chrorig))
+                    {
+                        boxOfEdges.Add(myphaseData[i].chrorig, new CountBox());
+                    }
+                    boxOfEdges[myphaseData[i].chrorig].addItem(i);
+                }
             }
+
+            //コンティグ端間のリード数割合の平均値を計算する。コンティグ間のリード数割合は["chr1##SELDLA##chr2"]などのキーで取得する
+            var ForFor = new Dictionary<string, float>();
+            var ForBac = new Dictionary<string, float>();
+            var BacFor = new Dictionary<string, float>();
+            var BacBac = new Dictionary<string, float>();
+            //tempChrNames.Distinct().AsParallel().ForAll(chrName => { //並列で処理しようとすると、Dictionaryに値を入れるときにエラーになる
+            tempContigNames.Distinct().ToList().ForEach(contigName => {
+                int num_x = num;
+                if (boxOfEdges[contigName].getNum() < num)
+                {
+                    num_x = (int)((boxOfEdges[contigName].getNum() + 1) / 2);
+                }
+                List<int> x1s = boxOfEdges[contigName].getFirstPositions(num_x);
+                List<int> x2s = boxOfEdges[contigName].getLastPositions(num_x);
+
+                tempContigNames.Distinct().ToList().ForEach(contigName2 =>
+                {
+                    if (contigName != contigName2)
+                    {
+                        int num_y = num;
+                        if (boxOfEdges[contigName2].getNum() < num)
+                        {
+                            num_y = (int)((boxOfEdges[contigName2].getNum() + 1) / 2);
+                        }
+                        List<int> y1s;
+                        List<int> y2s;
+                        y1s = boxOfEdges[contigName2].getFirstPositions(num_y);
+                        y2s = boxOfEdges[contigName2].getLastPositions(num_y);
+                        int tempn;
+                        float tempval;
+
+                        tempn = 0;
+                        tempval = 0;
+                        x1s.ForEach(x =>
+                        {
+                            y1s.ForEach(y =>
+                            {
+                                tempn++;
+                                tempval += distphase3[x, y];
+                            });
+                        });
+                        ForFor[contigName + sep + contigName2] = tempval / tempn;
+                        ForFor[contigName2 + sep + contigName] = tempval / tempn;
+
+                        tempn = 0;
+                        tempval = 0;
+                        x1s.ForEach(x =>
+                        {
+                            y2s.ForEach(y =>
+                            {
+                                tempn++;
+                                tempval += distphase3[x, y];
+                            });
+                        });
+                        ForBac[contigName + sep + contigName2] = tempval / tempn;
+                        BacFor[contigName2 + sep + contigName] = tempval / tempn; //BacForは結局ForBacで先に検索されてしまうので、無くても問題ないみたい
+
+                        tempn = 0;
+                        tempval = 0;
+                        x2s.ForEach(x =>
+                        {
+                            y1s.ForEach(y =>
+                            {
+                                tempn++;
+                                tempval += distphase3[x, y];
+                            });
+                        });
+                        BacFor[contigName + sep + contigName2] = tempval / tempn; //BacForは結局ForBacで先に検索されてしまうので、無くても問題ないみたい
+                        ForBac[contigName2 + sep + contigName] = tempval / tempn;
+
+                        tempn = 0;
+                        tempval = 0;
+                        x2s.ForEach(x =>
+                        {
+                            y2s.ForEach(y =>
+                            {
+                                tempn++;
+                                tempval += distphase3[x, y];
+                            });
+                        });
+                        BacBac[contigName + sep + contigName2] = tempval / tempn;
+                        BacBac[contigName2 + sep + contigName] = tempval / tempn;
+                    }
+                });
+            });
+
+            //値の高い染色体から順にくっつけていく。
+            MaxRelation maxRelation = new MaxRelation(ForFor, ForBac, BacFor, BacBac);
+
+            Dictionary<string, string> connectedMap = new Dictionary<string, string>();
+            int countconnected = 0;
+            int totalContigs = tempContigNames.Distinct().Count();
+            for (int i = 0; i < totalContigs * totalContigs * 4; i++) //forfor, forbac, bacfor, bacbacの4種類を全て見る
+            {
+                if (!maxRelation.isEmpty()) //おそらくEmptyになることはないはずだけどif文を一応付けている
+                {
+                    var (key, fr, val) = maxRelation.getTopRelation();
+                    var contigs = key.Split(sep);
+                    if (checkLoop(contigs[0], contigs[1], connectedMap, sep)) //ループになって繋がるとダメなので、それは避ける
+                    {
+                        maxRelation.getTopRelationAndDelete();
+                        countconnected++;
+                        Console.WriteLine(countconnected + "/" + totalContigs + " : " + val + ": " + contigs[0] + " " + contigs[1] + " " + fr);
+                        if (fr == 0) //ForFor
+                        {
+                            connectedMap[contigs[0] + sep + "f"] = contigs[1] + sep + "f";
+                            connectedMap[contigs[1] + sep + "f"] = contigs[0] + sep + "f";
+                        }
+                        else if (fr == 1) //ForBac
+                        {
+                            connectedMap[contigs[0] + sep + "f"] = contigs[1] + sep + "r";
+                            connectedMap[contigs[1] + sep + "r"] = contigs[0] + sep + "f";
+                        }
+                        else if (fr == 2) //結局BacForの出番はなさそう
+                        {
+                            connectedMap[contigs[0] + sep + "r"] = contigs[1] + sep + "f";
+                            connectedMap[contigs[1] + sep + "f"] = contigs[0] + sep + "r";
+                        }
+                        else //BacBac
+                        {
+                            connectedMap[contigs[0] + sep + "r"] = contigs[1] + sep + "r";
+                            connectedMap[contigs[1] + sep + "r"] = contigs[0] + sep + "r";
+                        }
+                    }
+                    else
+                    {
+                        maxRelation.deleteOnlyTop();
+                    }
+                }
+            }
+
+            //全体の並び順を決める 前側
+            string keyContig;
+            Console.WriteLine("start with: " + myphaseData[firstContigId].chrorig);
+            Console.WriteLine("Forward...");
+            Stack<string> contigForStack = new Stack<string>();
+            keyContig = myphaseData[firstContigId].chrorig + sep + "f";
+            for (int i = 0; i < totalContigs; i++)
+            {
+                if (connectedMap.ContainsKey(keyContig))
+                {
+                    var tempstr = connectedMap[keyContig].Split(sep);
+                    string tempfr = tempstr[1];
+                    Console.WriteLine(i + 1 + ": " + tempstr[0]);
+                    if (tempfr == "f")
+                    {
+                        keyContig = tempstr[0] + sep + "r";
+                        contigForStack.Push(tempstr[0] + sep + "rev");
+                    }
+                    else
+                    {
+                        keyContig = tempstr[0] + sep + "f";
+                        contigForStack.Push(tempstr[0] + sep + "for");
+                    }
+                }
+            }
+            //全体の並び順を決める 後ろ側
+            Console.WriteLine("Backward...");
+            Queue<string> contigBacQue = new Queue<string>();
+            keyContig = myphaseData[firstContigId].chrorig + sep + "r";
+            for (int i = 0; i < totalContigs; i++)
+            {
+                if (connectedMap.ContainsKey(keyContig))
+                {
+                    var tempstr = connectedMap[keyContig].Split(sep);
+                    string tempfr = tempstr[1];
+                    Console.WriteLine(i + 1 + ": " + tempstr[0]);
+                    if (tempfr == "f")
+                    {
+                        keyContig = tempstr[0] + sep + "r";
+                        contigBacQue.Enqueue(tempstr[0] + sep + "for");
+                    }
+                    else
+                    {
+                        keyContig = tempstr[0] + sep + "f";
+                        contigBacQue.Enqueue(tempstr[0] + sep + "rev");
+                    }
+                }
+            }
+
+            //新しい座標を決める
+            //前半
+            List<int> newOrder = new List<int>();
+            List<int> tempList;
+            List<string> tempContigNamesAdded = new List<string>();
+            List<string> tempContigOrient = new List<string>();
+            while (contigForStack.Count > 0)
+            {
+                var key = contigForStack.Pop();
+                var contigs = key.Split(sep);
+                tempContigNamesAdded.Add(contigs[0]);
+                if (contigs[1] == "for")
+                {
+                    tempList = boxOfEdges[contigs[0]].getFirstPositions(boxOfEdges[contigs[0]].getNum());
+                }
+                else
+                {
+                    tempList = boxOfEdges[contigs[0]].getLastPositions(boxOfEdges[contigs[0]].getNum());
+                }
+                for (int i = 0; i < tempList.Count; i++)
+                {
+                    newOrder.Add(tempList[i]);
+                    tempContigOrient.Add(contigs[1]);
+                }
+            }
+            //最初の染色体
+            tempContigNamesAdded.Add(myphaseData[firstContigId].chrorig);
+            tempList = boxOfEdges[myphaseData[firstContigId].chrorig].getFirstPositions(boxOfEdges[myphaseData[firstContigId].chrorig].getNum());
+            for (int i = 0; i < tempList.Count; i++)
+            {
+                newOrder.Add(tempList[i]);
+                tempContigOrient.Add("for");
+            }
+            //後半
+            while (contigBacQue.Count > 0)
+            {
+                var key = contigBacQue.Dequeue();
+                var contigs = key.Split(sep);
+                tempContigNamesAdded.Add(contigs[0]);
+                if (contigs[1] == "for")
+                {
+                    tempList = boxOfEdges[contigs[0]].getFirstPositions(boxOfEdges[contigs[0]].getNum());
+                }
+                else
+                {
+                    tempList = boxOfEdges[contigs[0]].getLastPositions(boxOfEdges[contigs[0]].getNum());
+                }
+                for (int i = 0; i < tempList.Count; i++)
+                {
+                    newOrder.Add(tempList[i]);
+                    tempContigOrient.Add(contigs[1]);
+                }
+            }
+
+            //順番にしたがって、distphase3, countmatrix, myphaseDataを並び替える
+
+            int[,] new_countmatrix = new int[num_markers, num_markers];
+            float[,] new_distphase3 = new float[num_markers, num_markers];
+            List<PhaseData> new_myphaseData = new List<PhaseData>();
+
+
+            List<int> newOrder2 = new List<int>();
+            List<string> tempContigOrient2 = new List<string>();
+            int tempCntI = -1; //chrの時は全部並び替えるのでnum_markers == newOrder.Countだったけど、contigの時は一致しないので別のindexを準備しておく
+            for (int i = 0; i < num_markers; i++)
+            {
+                if (contigsInChr.Contains(i))
+                {
+                    tempCntI++;
+                    newOrder2.Add(newOrder[tempCntI]);
+                    tempContigOrient2.Add(tempContigOrient[tempCntI]);
+                }
+                else
+                {
+                    newOrder2.Add(i);
+                    tempContigOrient2.Add("for"); //対象chr以外では向きは変更しないのでforを入れておく
+                }
+                new_myphaseData.Add(myphaseData[newOrder2[i]]);
+                if (tempContigOrient2[i] != "for") //コンティグの向きの情報は自動で反転しないので、revの場合反転させる
+                {
+                    if (new_myphaseData[i].chrorient == "+")
+                    {
+                        new_myphaseData[i].chrorient = "-";
+                    }
+                    else if (new_myphaseData[i].chrorient == "-")
+                    {
+                        new_myphaseData[i].chrorient = "+";
+                    }
+                    else // "na"
+                    {
+                        new_myphaseData[i].chrorient = "na";
+                    }
+                }
+            }
+            System.Threading.Tasks.Parallel.For(0, num_markers, i => {
+                for (int j = 0; j < num_markers; j++)
+                {
+                    new_distphase3[i, j] = distphase3[newOrder2[i], newOrder2[j]];
+                    new_countmatrix[i, j] = countmatrix[newOrder2[i], newOrder2[j]];
+                }
+            });
+
+
 
             countmatrix = new_countmatrix;
             distphase3 = new_distphase3;
