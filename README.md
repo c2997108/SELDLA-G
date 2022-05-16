@@ -74,7 +74,7 @@ Press the following keys to load, edit, and save.
 - 2 : Automatically reorder chromosomes that are in contact with each other in close proximity using 100 blocks of chromosome ends
 - 3 : Automatically reorder chromosomes that are in contact with each other in close proximity using 300 blocks of chromosome ends
 - 4 : Automatically reorder chromosomes that are in contact with each other in close proximity using 1000 blocks of chromosome ends
-- 6 : Automatically sort the contigs within the chromosome of the upper blue marker using 30 blocks of contig ends.
-- 6 : Automatically sort the contigs within the chromosome of the upper blue marker using 100 blocks of contig ends.
-- 6 : Automatically sort the contigs within the chromosome of the upper blue marker using 300 blocks of contig ends.
-- 6 : Automatically sort the contigs within the chromosome of the upper blue marker using 1000 blocks of contig ends.
+- 6 : Automatically reorder contigs within the chromosome of the upper blue marker using 30 blocks of contig ends.
+- 6 : Automatically reorder contigs within the chromosome of the upper blue marker using 100 blocks of contig ends.
+- 6 : Automatically reorder contigs within the chromosome of the upper blue marker using 300 blocks of contig ends.
+- 6 : Automatically reorder contigs within the chromosome of the upper blue marker using 1000 blocks of contig ends.
