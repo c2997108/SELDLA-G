@@ -229,10 +229,11 @@ python /Path/To/SALSA/run_pipeline.py -a $ref -l $ref.fai -b alignment.bed -e DN
 #ここまでSALSAの解析例
 ```
 
-SALSA_outputフォルダーの中の`scaffolds_FINAL.agp`、`alignment_iteration_1.bed`を指定すれば良い。
+SALSA_outputフォルダーの中の`scaffolds_FINAL.agp`、`alignment_iteration_1.bed`、`scaffolds_FINAL.fasta`を指定すれば良い。
 
-
-
+```
+.\SELDLA-G.exe hic -a scaffolds_FINAL.agp -b alignment_iteration_1.bed -f scaffolds_FINAL.fasta -w 200000
+```
 
 ## 作者の備忘録
 
