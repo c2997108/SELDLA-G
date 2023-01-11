@@ -219,6 +219,10 @@ awk -F '\t' -f make_SELDLA-G_input_from_multi_1run.awk seldla_split_seq.txt seld
 - `seldla_chain.ph.all.txt` : -p オプションのフェーズ情報のほう
 - `seldla_split_seq.txt` : -s オプションの配列情報のほう
  
+```
+.\SELDLA-G.exe linkage -p seldla_chain.ph.all.txt -s seldla_split_seq.txt
+```
+
 ### 3. HiC SALSA解析
 
 #### 3.1. Omni-Cの場合の解析例
