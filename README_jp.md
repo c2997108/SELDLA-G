@@ -247,6 +247,8 @@ SALSA_outputフォルダーの中の`scaffolds_FINAL.agp`、`alignment_iteration
 
 古いバージョンの時のやり方。ver. 2.3.0以降のSELDLAなら複数回実行する必要なし。
 
+<del>
+ 
 ### 4. SELDLA2回実行家系1つ
 
 1度目のSELDLAで十分に伸長できていない場合、その出力を使って再度実行すると良い。その場合、伸長するかどうかの閾値を一度目よりも下げておく方が良い。
@@ -307,3 +309,4 @@ awk -F '\t' -f make_SELDLA-G_input_from_multi_2run.awk seldla_split_seq.txt seld
 - `seldla2nd_chain.ph.all.txt` : -p オプションのフェーズ情報のほう
 - `seldla_split_seq.txt` : -s オプションの配列情報のほう
  
+</del>
