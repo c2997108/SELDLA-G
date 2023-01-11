@@ -170,7 +170,7 @@ wget https://raw.githubusercontent.com/c2997108/SELDLA-G/master/scripts/make_SEL
 #ノイズになりうるマーカーが1つしか取れなかったような短いコンティグを除去したい場合はこちら
 #wget https://raw.githubusercontent.com/c2997108/SELDLA-G/master/scripts/make_SELDLA-G_input_from_single_1run_rmlowqual.awk
 awk -F '\t' -f make_SELDLA-G_input_from_single_1run.awk seldla_split_1.txt.ld2imp seldla_split_1.txt.ld2.ph seldla_chain.txt > seldla_chain.ld2imp.all.txt
-#Portable Pipelineでの2段階目のSELDLAの結果を利用する場合
+#Portable Pipelineでのコンタミ除去後のSELDLAの結果を利用する場合
 #awk -F '\t' -f make_SELDLA-G_input_from_single_1run.awk seldla_rm_contamination_split_1.txt.ld2imp seldla_rm_contamination_split_1.txt.ld2.ph seldla_rm_contamination_chain.txt > seldla_rm_contamination_chain.ld2imp.all.txt
 ```
 
@@ -210,7 +210,7 @@ SELDLA --exmatch 0.7 --clmatch 0.85 --spmatch 0.8 -p 0.3 -b 0.1 --NonZeroSampleR
 ```
 wget https://raw.githubusercontent.com/c2997108/SELDLA-G/master/scripts/make_SELDLA-G_input_from_multi_1run.awk
 awk -F '\t' -f make_SELDLA-G_input_from_multi_1run.awk seldla_split_seq.txt seldla_split_*.txt.ld2.ph seldla_chain.txt > seldla_chain.ph.all.txt
-#Portable Pipelineでの2段階目のSELDLAの結果を利用する場合
+#Portable Pipelineでのコンタミ除去後のSELDLAの結果を利用する場合
 #awk -F '\t' -f make_SELDLA-G_input_from_multi_1run.awk seldla_rm_contamination_split_seq.txt seldla_rm_contamination_split_*.txt.ld2.ph seldla_rm_contamination_chain.txt > seldla_rm_contamination_chain.ph.all.txt
 ```
 
