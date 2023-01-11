@@ -176,6 +176,10 @@ awk -F '\t' -f make_SELDLA-G_input_from_single_1run.awk seldla_split_1.txt.ld2im
 - `seldla_chain.ld2imp.all.txt` : -p オプションのフェーズ情報のほう
 - `seldla_split_seq.txt` : -s オプションの配列情報のほう
 
+```
+.\SELDLA-G.exe linkage -p seldla_chain.ld2imp.all.txt -s seldla_split_seq.txt
+```
+
 ### 2. SELDLA複数家系
 
 RAD-seqなどの通常の連鎖解析はこれになる。単一家系でも、父方と母方の連鎖地図を統合すると思うので。上述のWGS~genotyping-by-mpileupなどでVCFを作っておく。
