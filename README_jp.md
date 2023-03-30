@@ -79,6 +79,24 @@ https://github.com/c2997108/SELDLA-G/releases
 - 8 : (Hi-C専用)上側の青色マーカーの染色体内のコンティグを自動で並び替える。コンティグ末端の300ブロックを使用。
 - 9 : (Hi-C専用)上側の青色マーカーの染色体内のコンティグを自動で並び替える。コンティグ末端の1000ブロックを使用。
 
+## クイックスタート
+
+### SELDLAで1家系の連鎖解析をした結果を細かく見る、もしくは修正したい場合
+
+以下をLinuxで実行しておく
+
+```
+wget https://raw.githubusercontent.com/c2997108/SELDLA-G/master/scripts/make_SELDLA-G_input_from_single_1run_rmlowqual.awk
+awk -F '\t' -f make_SELDLA-G_input_from_single_1run_rmlowqual.awk seldla_split_1.txt.ld2imp seldla_split_1.txt.ld2.ph seldla_chain.txt > seldla_chain.ld2imp.all.txt
+```
+
+出来上がった```seldla_chain.ld2imp.all.txt```と、SELDLAのアウトプットの```seldla_split_seq.txt```をWindowsに転送し、以下をWindowsで実行する。
+
+```
+.\SELDLA-G.exe linkage -p seldla_chain.ld2imp.all.txt -s seldla_split_seq.txt
+```
+
+
 ## 入力データの作成方法
 
 ### 1. SELDLA家系1つ
