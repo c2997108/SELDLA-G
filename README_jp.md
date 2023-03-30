@@ -11,7 +11,7 @@ https://github.com/c2997108/SELDLA-G/releases
 ## 動作環境
 
 ### Windows 10 or 11
-- Nvidia GT710以降、AMD RX6000台のGPUではGPUが使えるのを確認済み。INDELの新しい統合GPUなら大丈夫かも、未確認。
+- Nvidia GT710以降、AMD RX6000台のGPUではGPUが使えるのを確認済み。INTELの新しい統合GPUなら大丈夫かも、未確認。
 - 連鎖解析モードはWindowsでGPUが使える環境を推奨。
 
 ### Mac
