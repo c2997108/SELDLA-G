@@ -139,7 +139,13 @@ python /Path/To/PortablePipeline/scripts/pp.py WGS~genotyping-by-mpileup input_f
 "組み換えが生じたほうの親のID"\t"組み換えが生じていないほうの親のID"\t"交雑種である子供1"\t"子供2"...
 ```
 
-これと対応するように、SNPを読み込んだあと下記の条件のサイトが解析対象となる。
+例えば、親を読んでいない場合にfamily.txtを作るのであれば、
+
+```
+awk '$0~"^#CHROM"{ORS=""; print "-1\t-1"; for(i=10;i<=NF;i++){print "\t"$i}; print "\n"; exit}' all.vcf > family.txt
+```
+
+SELDLAではこのfamily.txtを読み取って、下記の条件のPOSITIONのSNPが解析対象となる。
 
 ```
 1(ヘテロSNPとなっている場所のみが対象となる)\t-1(読まれていない場所のみが対象となる)\t[0 or 1 or 2]\t[0 or 1 or 2]...
