@@ -154,7 +154,7 @@ SELDLAではこのfamily.txtを読み取って、下記の条件のPOSITIONのSN
 SELDLA連鎖解析のコマンドは下記の通り。
 
 ```
-python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -b "-p 0.03 -b 0.03 --NonZeroSampleRate=0.05 --NonZeroPhaseRate=0.1 -r 4000 --RateOfNotNASNP=0.001 --RateOfNotNALD=0.01 --ldseqnum 3" -d crossbreed contigs.fasta all.vcf family.txt
+python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -m 256 -b "-p 0.03 -b 0.03 --NonZeroSampleRate=0.05 --NonZeroPhaseRate=0.1 -r 4000 --RateOfNotNASNP=0.001 --RateOfNotNALD=0.01 --ldseqnum 3 --noNewVcf --clmatch=0.8 --spmatch=0.7 --exmatch=0.7" -d crossbreed contigs.fasta all.vcf family.txt
 ```
 
 ##### 1.1.2. 精子シングルセルの場合
