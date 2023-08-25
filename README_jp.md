@@ -171,7 +171,7 @@ python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~single-cell_Cell
 
 family.txtの中身としては、
 ```
-dummy\t精子1のID\t精子2...
+-1\t精子1のID\t精子2...
 ```
 となっていて、
 clean.txtの中身は
@@ -186,6 +186,33 @@ python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -b "-p 0.
 ```
 
 ブロックサイズを決める-rオプションは、シングルセルの場合は欠損値が多いため10個程度のSNPが集まる大きさとしたほうが良いけど、大きくしすぎると解像度が下がってブレークポイントを検出しづらくなるので、コンティグN50の1/4程度までの大きさが良いかも。
+
+#### 1.1.3. 1倍体の場合
+
+例えば下記などでVCFを作る
+
+```
+pp RNA-seq~SNPcall-bbmap-callvariants fastq_dir/ ref.fa
+```
+
+もし親の個体を一緒に読んでいるなら、下記のコマンドで親でヘテロに読めた場所だけに限定したVCFを作っておく
+
+```
+parrent="ID_OF_PARRENT_IN_VCF_FILE" #←ここを変えて
+awk -F'\t' -v parrent="$parrent" '$0!~"^##"{view=1; if($0~"^#"){for(i=10;i<=NF;i++){if($i==parrent){i_p=i}}}else{if(length($5)>1||substr($i_p,1,3)!="0/1"){view=0}}; if(view==1){print $0}}' all.vcf > all.clean_by_parrent.vcf
+```
+
+family.txtを作る
+
+```
+awk '$0!~"^##"{print $0; exit}' all.vcf |awk -v parrent=$parrent '{ORS=""; print "-1"; for(i=10;i<=NF;i++){if($i!=parrent){print "\t"$i}}; print "\n"}' > family.txt
+```
+
+連鎖解析を実行
+
+```
+pp linkage-analysis~SELDLA -b "-p 0.03 -b 0.03 --NonZeroSampleRate=0.05 --NonZeroPhaseRate=0.1 -r 4000 --RateOfNotNASNP=0.001 --RateOfNotNALD=0.01 --ldseqnum 3 --noNewVcf --clmatch=0.8 --spmatch=0.7 --exmatch=0.7" -d haploid ref.fa all.clean_by_parrent.vcf family.txt
+```
 
 #### 1.2. SELDLAの結果からSELDLA-Gの入力ファイルを作成
 
