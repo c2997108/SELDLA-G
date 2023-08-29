@@ -23,6 +23,8 @@ namespace SELDLA_G
         Texture2D whiteRectangle;
         Texture2D texture;
         Texture2D texturePop;
+        Texture2D[,] splitTexture;
+        int splitTextureSize = 10000;
         SKBitmap bitmap;
         SKCanvas canvas;
         SKPaint paintPop;
@@ -529,6 +531,16 @@ namespace SELDLA_G
             openFile(filePhase);
 
             texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
+
+            splitTexture = new Texture2D[(num_markers - 1) / splitTextureSize + 1, (num_markers - 1) / splitTextureSize + 1];
+            for (int i=0;i< (num_markers - 1) / splitTextureSize + 1; i++)
+            {
+                for(int j=0;j< (num_markers - 1) / splitTextureSize + 1; j++)
+                {
+                    splitTexture[i,j]=new Texture2D(GraphicsDevice, splitTextureSize, splitTextureSize);
+                }
+            }
+
             calcMatchRate1line();
             setDistTexture();
 
@@ -1248,7 +1260,14 @@ namespace SELDLA_G
             Debug.WriteLine("Draw:");
 
             _spriteBatch.Begin();
-            _spriteBatch.Draw(texture, new Vector2((float)worldX, (float)worldY), null, Color.White, 0.0f, Vector2.Zero, new Vector2((float)worldW, (float)worldW), SpriteEffects.None, 0.0f);
+            //Console.WriteLine("X: " + worldX + " Y: " + worldY + " W: " + worldW);
+            for (int i = 0; i < (num_markers - 1) / splitTextureSize + 1; i++)
+            {
+                for (int j = 0; j < (num_markers - 1) / splitTextureSize + 1; j++)
+                {
+                    _spriteBatch.Draw(splitTexture[i, j], new Vector2((float)worldX + i * splitTextureSize * (float)worldW, (float)worldY + j * splitTextureSize * (float)worldW), null, Color.White, 0.0f, Vector2.Zero, new Vector2((float)worldW, (float)worldW), SpriteEffects.None, 0.0f);
+                }
+            }
 
             if(colorvari == 1)
             {
@@ -1399,10 +1418,11 @@ namespace SELDLA_G
                     drawRect(_spriteBatch, whiteRectangle, tempMstart1, markMend2[0] - tempMstart1 + 1, Color.Orange);
                 }
             }
-
+            
             _spriteBatch.Draw(texturePop, new Vector2(0, 0), Color.White);
 
             _spriteBatch.End();
+
             base.Draw(gameTime);
         }
 
@@ -2108,6 +2128,39 @@ namespace SELDLA_G
                 }
             }
             texture.SetData(dataColors);
+
+            for (int i = 0; i < (num_markers - 1) / splitTextureSize + 1; i++)
+            {
+                for (int j = 0; j < (num_markers - 1) / splitTextureSize + 1; j++)
+                {
+                    var dataColors2 = new Color[splitTextureSize * splitTextureSize];
+                    for (int x = 0; x < splitTextureSize; x++)
+                    {
+                        if(i * splitTextureSize + x >= num_markers)
+                        {
+                            break;
+                        }
+                        for (int y = 0; y < splitTextureSize; y++)
+                        {
+                            if (j * splitTextureSize + y >= num_markers)
+                            {
+                                break;
+                            }
+                            if (colorvari == 1)
+                            {
+                                //背景黒
+                                dataColors2[x * splitTextureSize + y] = new Color((int)(255 * distphase3[i * splitTextureSize + x, j * splitTextureSize + y]), 0, 0);
+                            }
+                            else
+                            {
+                                //背景白
+                                dataColors2[x * splitTextureSize + y] = new Color(255, (int)(255 * (1 - distphase3[i * splitTextureSize + x, j * splitTextureSize + y])), (int)(255 * (1 - distphase3[i * splitTextureSize + x, j * splitTextureSize + y])));
+                            }
+                        }
+                    }
+                    splitTexture[j, i].SetData(dataColors2);
+                }
+            }
         }
         void setPosData(int x, MarkerPos pos1)
         {
