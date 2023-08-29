@@ -11,7 +11,7 @@ https://github.com/c2997108/SELDLA-G/releases
 ## 動作環境
 
 ### Windows 10 or 11
-- Nvidia GT710以降、AMD RX6000台のGPUではGPUが使えるのを確認済み。INDELの新しい統合GPUなら大丈夫かも、未確認。
+- Nvidia GT710以降、AMD RX6000台のGPUではGPUが使えるのを確認済み。INTELの新しい統合GPUなら大丈夫かも、未確認。
 - 連鎖解析モードはWindowsでGPUが使える環境を推奨。
 
 ### Mac
@@ -79,6 +79,24 @@ https://github.com/c2997108/SELDLA-G/releases
 - 8 : (Hi-C専用)上側の青色マーカーの染色体内のコンティグを自動で並び替える。コンティグ末端の300ブロックを使用。
 - 9 : (Hi-C専用)上側の青色マーカーの染色体内のコンティグを自動で並び替える。コンティグ末端の1000ブロックを使用。
 
+## クイックスタート
+
+### SELDLAで1家系の連鎖解析をした結果を細かく見る、もしくは修正したい場合
+
+以下をLinuxで実行しておく
+
+```
+wget https://raw.githubusercontent.com/c2997108/SELDLA-G/master/scripts/make_SELDLA-G_input_from_single_1run_rmlowqual.awk
+awk -F '\t' -f make_SELDLA-G_input_from_single_1run_rmlowqual.awk seldla_split_1.txt.ld2imp seldla_split_1.txt.ld2.ph seldla_chain.txt > seldla_chain.ld2imp.all.txt
+```
+
+出来上がった```seldla_chain.ld2imp.all.txt```と、SELDLAのアウトプットの```seldla_split_seq.txt```をWindowsに転送し、以下をWindowsで実行する。
+
+```
+.\SELDLA-G.exe linkage -p seldla_chain.ld2imp.all.txt -s seldla_split_seq.txt
+```
+
+
 ## 入力データの作成方法
 
 ### 1. SELDLA家系1つ
@@ -121,7 +139,13 @@ python /Path/To/PortablePipeline/scripts/pp.py WGS~genotyping-by-mpileup input_f
 "組み換えが生じたほうの親のID"\t"組み換えが生じていないほうの親のID"\t"交雑種である子供1"\t"子供2"...
 ```
 
-これと対応するように、SNPを読み込んだあと下記の条件のサイトが解析対象となる。
+例えば、親を読んでいない場合にfamily.txtを作るのであれば、
+
+```
+awk '$0~"^#CHROM"{ORS=""; print "-1\t-1"; for(i=10;i<=NF;i++){print "\t"$i}; print "\n"; exit}' all.vcf > family.txt
+```
+
+SELDLAではこのfamily.txtを読み取って、下記の条件のPOSITIONのSNPが解析対象となる。
 
 ```
 1(ヘテロSNPとなっている場所のみが対象となる)\t-1(読まれていない場所のみが対象となる)\t[0 or 1 or 2]\t[0 or 1 or 2]...
@@ -130,7 +154,7 @@ python /Path/To/PortablePipeline/scripts/pp.py WGS~genotyping-by-mpileup input_f
 SELDLA連鎖解析のコマンドは下記の通り。
 
 ```
-python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -b "-p 0.03 -b 0.03 --NonZeroSampleRate=0.05 --NonZeroPhaseRate=0.1 -r 4000 --RateOfNotNASNP=0.001 --RateOfNotNALD=0.01 --ldseqnum 3" -d crossbreed contigs.fasta all.vcf family.txt
+python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -m 256 -b "-p 0.03 -b 0.03 --NonZeroSampleRate=0.05 --NonZeroPhaseRate=0.1 -r 4000 --RateOfNotNASNP=0.001 --RateOfNotNALD=0.01 --ldseqnum 3 --noNewVcf --clmatch=0.8 --spmatch=0.7 --exmatch=0.7" -d crossbreed contigs.fasta all.vcf family.txt
 ```
 
 ##### 1.1.2. 精子シングルセルの場合
@@ -147,7 +171,7 @@ python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~single-cell_Cell
 
 family.txtの中身としては、
 ```
-dummy\t精子1のID\t精子2...
+-1\t精子1のID\t精子2...
 ```
 となっていて、
 clean.txtの中身は
@@ -163,6 +187,33 @@ python /Path/To/PortablePipeline/scripts/pp.py linkage-analysis~SELDLA -b "-p 0.
 
 ブロックサイズを決める-rオプションは、シングルセルの場合は欠損値が多いため10個程度のSNPが集まる大きさとしたほうが良いけど、大きくしすぎると解像度が下がってブレークポイントを検出しづらくなるので、コンティグN50の1/4程度までの大きさが良いかも。
 
+#### 1.1.3. 1倍体の場合
+
+例えば下記などでVCFを作る
+
+```
+pp RNA-seq~SNPcall-bbmap-callvariants fastq_dir/ ref.fa
+```
+
+もし親の個体を一緒に読んでいるなら、下記のコマンドで親でヘテロに読めた場所だけに限定したVCFを作っておく
+
+```
+parrent="ID_OF_PARRENT_IN_VCF_FILE" #←ここを変えて
+awk -F'\t' -v parrent="$parrent" '$0!~"^##"{view=1; if($0~"^#"){for(i=10;i<=NF;i++){if($i==parrent){i_p=i}}}else{if(length($5)>1||substr($i_p,1,3)!="0/1"){view=0}}; if(view==1){print $0}}' all.vcf > all.clean_by_parrent.vcf
+```
+
+family.txtを作る
+
+```
+awk '$0!~"^##"{print $0; exit}' all.vcf |awk -v parrent=$parrent '{ORS=""; print "-1"; for(i=10;i<=NF;i++){if($i!=parrent){print "\t"$i}}; print "\n"}' > family.txt
+```
+
+連鎖解析を実行
+
+```
+pp linkage-analysis~SELDLA -b "-p 0.03 -b 0.03 --NonZeroSampleRate=0.05 --NonZeroPhaseRate=0.1 -r 4000 --RateOfNotNASNP=0.001 --RateOfNotNALD=0.01 --ldseqnum 3 --noNewVcf --clmatch=0.8 --spmatch=0.7 --exmatch=0.7" -d haploid ref.fa all.clean_by_parrent.vcf family.txt
+```
+
 #### 1.2. SELDLAの結果からSELDLA-Gの入力ファイルを作成
 
 ```
@@ -170,11 +221,17 @@ wget https://raw.githubusercontent.com/c2997108/SELDLA-G/master/scripts/make_SEL
 #ノイズになりうるマーカーが1つしか取れなかったような短いコンティグを除去したい場合はこちら
 #wget https://raw.githubusercontent.com/c2997108/SELDLA-G/master/scripts/make_SELDLA-G_input_from_single_1run_rmlowqual.awk
 awk -F '\t' -f make_SELDLA-G_input_from_single_1run.awk seldla_split_1.txt.ld2imp seldla_split_1.txt.ld2.ph seldla_chain.txt > seldla_chain.ld2imp.all.txt
+#Portable Pipelineでのコンタミ除去後のSELDLAの結果を利用する場合
+#awk -F '\t' -f make_SELDLA-G_input_from_single_1run.awk seldla_rm_contamination_split_1.txt.ld2imp seldla_rm_contamination_split_1.txt.ld2.ph seldla_rm_contamination_chain.txt > seldla_rm_contamination_chain.ld2imp.all.txt
 ```
 
 下記のファイルをSELDLA-Gの入力ファイルとする。
 - `seldla_chain.ld2imp.all.txt` : -p オプションのフェーズ情報のほう
 - `seldla_split_seq.txt` : -s オプションの配列情報のほう
+
+```
+.\SELDLA-G.exe linkage -p seldla_chain.ld2imp.all.txt -s seldla_split_seq.txt
+```
 
 ### 2. SELDLA複数家系
 
@@ -204,6 +261,8 @@ SELDLA --exmatch 0.7 --clmatch 0.85 --spmatch 0.8 -p 0.3 -b 0.1 --NonZeroSampleR
 ```
 wget https://raw.githubusercontent.com/c2997108/SELDLA-G/master/scripts/make_SELDLA-G_input_from_multi_1run.awk
 awk -F '\t' -f make_SELDLA-G_input_from_multi_1run.awk seldla_split_seq.txt seldla_split_*.txt.ld2.ph seldla_chain.txt > seldla_chain.ph.all.txt
+#Portable Pipelineでのコンタミ除去後のSELDLAの結果を利用する場合
+#awk -F '\t' -f make_SELDLA-G_input_from_multi_1run.awk seldla_rm_contamination_split_seq.txt seldla_rm_contamination_split_*.txt.ld2.ph seldla_rm_contamination_chain.txt > seldla_rm_contamination_chain.ph.all.txt
 ```
 
 この場合、出力されるのはコンティグの両端のフェーズ情報のみ。（複数家系あるとSNPの存在した場所がずれるため、ブロックごとに単純にマージできないため）
@@ -211,6 +270,10 @@ awk -F '\t' -f make_SELDLA-G_input_from_multi_1run.awk seldla_split_seq.txt seld
 - `seldla_chain.ph.all.txt` : -p オプションのフェーズ情報のほう
 - `seldla_split_seq.txt` : -s オプションの配列情報のほう
  
+```
+.\SELDLA-G.exe linkage -p seldla_chain.ph.all.txt -s seldla_split_seq.txt
+```
+
 ### 3. HiC SALSA解析
 
 #### 3.1. Omni-Cの場合の解析例
@@ -229,15 +292,18 @@ python /Path/To/SALSA/run_pipeline.py -a $ref -l $ref.fai -b alignment.bed -e DN
 #ここまでSALSAの解析例
 ```
 
-SALSA_outputフォルダーの中の`scaffolds_FINAL.agp`、`alignment_iteration_1.bed`を指定すれば良い。
+SALSA_outputフォルダーの中の`scaffolds_FINAL.agp`、`alignment_iteration_1.bed`、`scaffolds_FINAL.fasta`を指定すれば良い。
 
-
-
+```
+.\SELDLA-G.exe hic -a scaffolds_FINAL.agp -b alignment_iteration_1.bed -f scaffolds_FINAL.fasta -w 200000
+```
 
 ## 作者の備忘録
 
 古いバージョンの時のやり方。ver. 2.3.0以降のSELDLAなら複数回実行する必要なし。
 
+<del>
+ 
 ### 4. SELDLA2回実行家系1つ
 
 1度目のSELDLAで十分に伸長できていない場合、その出力を使って再度実行すると良い。その場合、伸長するかどうかの閾値を一度目よりも下げておく方が良い。
@@ -298,3 +364,4 @@ awk -F '\t' -f make_SELDLA-G_input_from_multi_2run.awk seldla_split_seq.txt seld
 - `seldla2nd_chain.ph.all.txt` : -p オプションのフェーズ情報のほう
 - `seldla_split_seq.txt` : -s オプションの配列情報のほう
  
+</del>
