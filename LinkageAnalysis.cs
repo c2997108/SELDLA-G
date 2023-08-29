@@ -309,46 +309,45 @@ namespace SELDLA_G
                 }
             }
         }*/
-        static void CalcMatchN1lineKernel(Index1D index, int startIndex, int endIndex, int n_markers, int n_samples, ArrayView<int> data, ArrayView<float> output, ArrayView<float> outputN)
+        static void CalcMatchN1lineKernel(Index1D index, int size_of_block_markers, int n_samples, ArrayView<int> dataX, ArrayView<int> dataY, ArrayView<float> output, ArrayView<float> outputN)
         {
-            int i = index.X;
-            for (int j = startIndex; j <= endIndex; j++)
-            {
+            int i = index.X / size_of_block_markers;
+            int j = index.X % size_of_block_markers;
+
                 int sum1 = 0;
                 int sum2 = 0;
                 int n = 0;
                 for (int k = 0; k < n_samples; k++)
                 {
-                    if (data[i * n_samples + k] != 0 && data[j * n_samples + k] != 0)
+                    if (dataX[i * n_samples + k] != 0 && dataY[j * n_samples + k] != 0)
                     {
                         n++;
-                        if (data[i * n_samples + k] == data[j * n_samples + k])
+                        if (dataX[i * n_samples + k] == dataY[j * n_samples + k])
                         {
                             sum1++;
                         }
-                        if (data[i * n_samples + k] == -data[j * n_samples + k])
+                        if (dataX[i * n_samples + k] == -dataY[j * n_samples + k])
                         {
                             sum2++;
                         }
                     }
                 }
-                outputN[i + (j - startIndex) * n_markers] = n;
+                outputN[index.X] = n;
                 if (n == 0)
                 {
-                    output[i + (j - startIndex) * n_markers] = 0;
+                    output[index.X] = 0;
                 }
                 else
                 {
                     if (sum1 > sum2)
                     {
-                        output[i + (j - startIndex) * n_markers] = sum1;
+                        output[index.X] = sum1;
                     }
                     else
                     {
-                        output[i + (j - startIndex) * n_markers] = sum2;
+                        output[index.X] = sum2;
                     }
                 }
-            }
         }
         void calcMatchRate1line()
         {
@@ -359,7 +358,6 @@ namespace SELDLA_G
                 //if (num_markers * (i + 1) > maxItemsSize) break;
             }
             distphase3 = new float[num_markers, num_markers];
-            int[] phaseForGPU;
             using Context context2 = Context.Create(builder => builder.AllAccelerators());
             //using Context context2 = Context.Create(builder => builder.OpenCL());
             Accelerator accelerator2 = context2.GetPreferredDevice(preferCPU: false).CreateAccelerator(context2);
@@ -425,49 +423,71 @@ namespace SELDLA_G
             {
                 float[,] distphaseN = new float[num_markers, num_markers]; //配列は0で初期化されている。言語仕様的に。
                 float[,] distphaseV = new float[num_markers, num_markers];
-                MemoryBuffer1D<int, Stride1D.Dense> deviceData2;
-                MemoryBuffer1D<float, Stride1D.Dense> deviceOutputV = accelerator2.Allocate1D<float>(num_markers * num_rows);
-                MemoryBuffer1D<float, Stride1D.Dense> deviceOutputN = accelerator2.Allocate1D<float>(num_markers * num_rows);
-                Action<Index1D, int, int, int, int, ArrayView<int>, ArrayView<float>, ArrayView<float>> loadedKernel2 =
-                    accelerator2.LoadAutoGroupedStreamKernel<Index1D, int, int, int, int, ArrayView<int>, ArrayView<float>, ArrayView<float>>(CalcMatchN1lineKernel);
-                int n = -1;
-                foreach (var eachfamily in myfamily.Values)
+                int size_of_block_markers = 10 * 1000;
+                MemoryBuffer1D<float, Stride1D.Dense> gpuOutputV = accelerator2.Allocate1D<float>(size_of_block_markers * size_of_block_markers);
+                MemoryBuffer1D<float, Stride1D.Dense> gpuOutputN = accelerator2.Allocate1D<float>(size_of_block_markers * size_of_block_markers);
+                Action<Index1D, int, int, ArrayView<int>, ArrayView<int>, ArrayView<float>, ArrayView<float>> gpuKernel =
+                    accelerator2.LoadAutoGroupedStreamKernel<Index1D, int, int, ArrayView<int>, ArrayView<int>, ArrayView<float>, ArrayView<float>>(CalcMatchN1lineKernel);
+                for (int xsplit = 0; xsplit < (num_markers - 1) / size_of_block_markers + 1; xsplit++)
                 {
-                    n++;
-                    //Console.WriteLine(n);
-                    phaseForGPU = new int[num_markers * eachfamily.Count];
-                    for (int i = 0; i < num_markers; i++)
+                    for (int ysplit = 0; ysplit < (num_markers - 1) / size_of_block_markers + 1; ysplit++)
                     {
-                        int j = -1;
-                        foreach (var person in eachfamily)
+                        Console.WriteLine("x: "+xsplit + " y: " + ysplit + " " + (xsplit * ((num_markers - 1) / size_of_block_markers + 1) + ysplit + 1) + "/" + (((num_markers - 1) / size_of_block_markers + 1) * ((num_markers - 1) / size_of_block_markers + 1)));
+                        int[] phaseForGPUX;
+                        int[] phaseForGPUY;
+                        foreach (var eachfamily in myfamily.Values)
                         {
-                            j++;
-                            phaseForGPU[i * eachfamily.Count + j] = myphaseData[i].dataphase[person];
-                        }
-                    }
-                    deviceData2 = accelerator2.Allocate1D(phaseForGPU);
-
-                    for (int j = 0; j < num_markers; j++)
-                    {
-                        //Console.WriteLine(j);
-                        int startIndex = j;
-                        int endIndex = startIndex + num_rows - 1;
-                        if (endIndex >= num_markers) endIndex = num_markers - 1;
-                        loadedKernel2(new Index1D(num_markers), startIndex, endIndex, num_markers, eachfamily.Count, deviceData2.View, deviceOutputV.View, deviceOutputN.View);
-                        accelerator2.Synchronize();
-                        float[] hostOutputV = deviceOutputV.GetAsArray1D();
-                        float[] hostOutputN = deviceOutputN.GetAsArray1D();
-                        //Console.WriteLine(hostOutput2.Length);
-                        for (int j2 = startIndex; j2 <= endIndex; j2++)
-                        {
-                            for (int i = 0; i < num_markers; i++)
+                            //Console.WriteLine(n);
+                            phaseForGPUX = new int[size_of_block_markers * eachfamily.Count];
+                            phaseForGPUY = new int[size_of_block_markers * eachfamily.Count];
+                            for (int x = 0; x < size_of_block_markers; x++)
                             {
-                                    distphaseN[i, j2] += hostOutputN[i + (j2 - startIndex) * num_markers];
-                                    distphaseV[i, j2] += hostOutputV[i + (j2 - startIndex) * num_markers];
+                                if(xsplit * size_of_block_markers + x < num_markers)
+                                {
+                                    int j = -1;
+                                    foreach (var person in eachfamily)
+                                    {
+                                        j++;
+                                        phaseForGPUX[x * eachfamily.Count + j] = myphaseData[xsplit * size_of_block_markers + x].dataphase[person];
+                                    }
+                                }
                             }
-                            //Console.WriteLine(j2);
+                            MemoryBuffer1D<int, Stride1D.Dense> gpuDataX = accelerator2.Allocate1D(phaseForGPUX);
+                            for (int y = 0; y < size_of_block_markers; y++)
+                            {
+                                if (ysplit * size_of_block_markers + y < num_markers)
+                                {
+                                    int j = -1;
+                                    foreach (var person in eachfamily)
+                                    {
+                                        j++;
+                                        phaseForGPUY[y * eachfamily.Count + j] = myphaseData[ysplit * size_of_block_markers + y].dataphase[person];
+                                    }
+                                }
+                            }
+                            MemoryBuffer1D<int, Stride1D.Dense> gpuDataY = accelerator2.Allocate1D(phaseForGPUY);
+
+                            gpuKernel(new Index1D(size_of_block_markers*size_of_block_markers), size_of_block_markers, eachfamily.Count, gpuDataX.View, gpuDataY.View, gpuOutputV.View, gpuOutputN.View);
+                            accelerator2.Synchronize();
+                            float[] hostOutputV = gpuOutputV.GetAsArray1D();
+                            float[] hostOutputN = gpuOutputN.GetAsArray1D();
+
+                            for (int x = 0; x < size_of_block_markers; x++)
+                            {
+                                if (xsplit * size_of_block_markers + x < num_markers)
+                                {
+                                    for (int y = 0; y < size_of_block_markers; y++)
+                                    {
+                                        if (ysplit * size_of_block_markers + y < num_markers)
+                                        {
+                                            distphaseN[xsplit * size_of_block_markers + x, ysplit * size_of_block_markers + y] += hostOutputN[x * size_of_block_markers + y];
+                                            distphaseV[xsplit * size_of_block_markers + x, ysplit * size_of_block_markers + y] += hostOutputV[x * size_of_block_markers + y];
+                                        }
+                                    }
+                                }
+                            }
+
                         }
-                        j += endIndex - startIndex;
                     }
                 }
                 accelerator2.Dispose();

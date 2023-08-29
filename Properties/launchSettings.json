@@ -18,7 +18,7 @@
     },
     "linkage file1": {
       "commandName": "Project",
-      "commandLineArgs": "linkage -p cl0.92_sp0.90_ex0.60_chain.ld2imp.all.txt"
+      "commandLineArgs": "linkage -p ayu_test.txt"
     },
     "hic-hata": {
       "commandName": "Project",
