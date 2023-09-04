@@ -2110,24 +2110,6 @@ namespace SELDLA_G
         }
         void setDistTexture()
         {
-            var dataColors = new Color[num_markers * num_markers];
-            for (int i = 0; i < num_markers; i++)
-            {
-                for (int j = 0; j < num_markers; j++)
-                {
-                    if(colorvari == 1)
-                    {
-                        //背景黒
-                        dataColors[i * num_markers + j] = new Color((int)(255 * distphase3[i, j]), 0, 0);
-                    }
-                    else
-                    {
-                        //背景白
-                        dataColors[i * num_markers + j] = new Color(255, (int)(255 * (1 - distphase3[i, j])), (int)(255 * (1 - distphase3[i, j])));
-                    }
-                }
-            }
-            texture.SetData(dataColors);
 
             for (int i = 0; i < (num_markers - 1) / splitTextureSize + 1; i++)
             {

@@ -24,6 +24,8 @@ namespace SELDLA_G
         Texture2D whiteRectangle;
         Texture2D texture;
         Texture2D texturePop;
+        Texture2D[,] splitTexture;
+        int splitTextureSize = 10000;
         SKBitmap bitmap;
         SKCanvas canvas;
         SKPaint paintPop;
@@ -394,6 +396,16 @@ namespace SELDLA_G
             openFileCalculated(fileAGP, fileCalculated);
 
             texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
+
+            splitTexture = new Texture2D[(num_markers - 1) / splitTextureSize + 1, (num_markers - 1) / splitTextureSize + 1];
+            for (int i = 0; i < (num_markers - 1) / splitTextureSize + 1; i++)
+            {
+                for (int j = 0; j < (num_markers - 1) / splitTextureSize + 1; j++)
+                {
+                    splitTexture[i, j] = new Texture2D(GraphicsDevice, splitTextureSize, splitTextureSize);
+                }
+            }
+
             setDistTexture();
 
             var w = GraphicsDevice.DisplayMode.Width; //500;
@@ -1202,7 +1214,15 @@ namespace SELDLA_G
             Debug.WriteLine("Draw:");
 
             _spriteBatch.Begin();
-            _spriteBatch.Draw(texture, new Vector2((float)worldX, (float)worldY), null, Color.White, 0.0f, Vector2.Zero, new Vector2((float)worldW, (float)worldW), SpriteEffects.None, 0.0f);
+
+            //Console.WriteLine("X: " + worldX + " Y: " + worldY + " W: " + worldW);
+            for (int i = 0; i < (num_markers - 1) / splitTextureSize + 1; i++)
+            {
+                for (int j = 0; j < (num_markers - 1) / splitTextureSize + 1; j++)
+                {
+                    _spriteBatch.Draw(splitTexture[i, j], new Vector2((float)worldX + i * splitTextureSize * (float)worldW, (float)worldY + j * splitTextureSize * (float)worldW), null, Color.White, 0.0f, Vector2.Zero, new Vector2((float)worldW, (float)worldW), SpriteEffects.None, 0.0f);
+                }
+            }
 
             if (colorvari == 1)
             {
@@ -2691,27 +2711,41 @@ namespace SELDLA_G
         }
         void setDistTexture()
         {
-            var dataColors = new Color[num_markers * num_markers];
-            int tempcol = 0;
-            for (int i = 0; i < num_markers; i++)
+            for (int i = 0; i < (num_markers - 1) / splitTextureSize + 1; i++)
             {
-                for (int j = 0; j < num_markers; j++)
+                for (int j = 0; j < (num_markers - 1) / splitTextureSize + 1; j++)
                 {
-                    tempcol = (int)(color_fold * (255 * distphase3[i, j]));
-                    if (tempcol > 255) tempcol = 255;
-                    if (colorvari == 1)
+                    var dataColors2 = new Color[splitTextureSize * splitTextureSize];
+                    int tempcol = 0;
+                    for (int x = 0; x < splitTextureSize; x++)
                     {
-                        //背景黒
-                        dataColors[i * num_markers + j] = new Color(tempcol, 0, 0);
+                        if (i * splitTextureSize + x >= num_markers)
+                        {
+                            break;
+                        }
+                        for (int y = 0; y < splitTextureSize; y++)
+                        {
+                            if (j * splitTextureSize + y >= num_markers)
+                            {
+                                break;
+                            }
+                            tempcol = (int)(color_fold * (255 * distphase3[i * splitTextureSize + x, j * splitTextureSize + y]));
+                            if (tempcol > 255) tempcol = 255;
+                            if (colorvari == 1)
+                            {
+                                //背景黒
+                                dataColors2[x * splitTextureSize + y] = new Color(tempcol, 0, 0);
+                            }
+                            else
+                            {
+                                //背景白
+                                dataColors2[x * splitTextureSize + y] = new Color(255, (int)(255 - tempcol), (int)(255 - tempcol));
+                            }
+                        }
                     }
-                    else
-                    {
-                        //背景白
-                        dataColors[i * num_markers + j] = new Color(255, (int)(255 - tempcol), (int)(255 - tempcol));
-                    }
+                    splitTexture[j, i].SetData(dataColors2);
                 }
             }
-            texture.SetData(dataColors);
         }
         void setPosData(int x, MarkerPos pos1)
         {

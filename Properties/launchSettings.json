@@ -30,7 +30,7 @@
     },
     "hic-hata4": {
       "commandName": "Project",
-      "commandLineArgs": "hic -a hata4.agp -m hata4.matrix -f hata-original.fasta"
+      "commandLineArgs": "hic -a hata_final4.agp -m hata_final4.matrix -f hata-original.fasta"
     },
     "linkage file1 test": {
       "commandName": "Project",
