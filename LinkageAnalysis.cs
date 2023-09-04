@@ -590,10 +590,12 @@ namespace SELDLA_G
         {
             backdistphase3 = distphase3.Clone() as float[,];
             backmyphaseData = new List<PhaseData>();
-            for(int i = 0; i < myphaseData.Count; i++)
+            for (int i = 0; i < myphaseData.Count; i++)
             {
                 backmyphaseData.Add(myphaseData[i].DeepCopy());
             }
+            //backdistphase3 = distphase3.Clone() as float[,];
+            //backmyphaseData = myphaseData.DeepCopy();
         }
         void tempsavedata()
         {
@@ -700,6 +702,7 @@ namespace SELDLA_G
                     {
                         myphaseData.Add(backmyphaseData[i].DeepCopy());
                     }
+                    //myphaseData = backmyphaseData.DeepCopy();
                     distphase3 = backdistphase3.Clone() as float[,];
                     num_markers = myphaseData.Count;
                     texture = new Texture2D(GraphicsDevice, num_markers, num_markers);

@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
 using System.Linq;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace SELDLA_G
 {
@@ -45,6 +47,26 @@ namespace SELDLA_G
         public int contigEnd = -1;
     }
 
+
+    //public static class CopyHelper
+    //{
+    //    /// <summary>
+    //    /// オブジェクトの値コピーを容易にする拡張メソッド。
+    //    /// </summary>
+    //    public static T DeepCopy<T>(this T src)
+    //    {
+    //        var jsonSerializerOptions = new JsonSerializerOptions()
+    //        {
+    //            ReferenceHandler = ReferenceHandler.Preserve,
+    //            WriteIndented = true
+    //        };
+
+    //        var jsonData = JsonSerializer.Serialize(src, jsonSerializerOptions);
+
+    //        return JsonSerializer.Deserialize<T>(jsonData, jsonSerializerOptions);
+    //    }
+    //}
+
     [Serializable]
     internal class PhaseData
     {
@@ -61,10 +83,35 @@ namespace SELDLA_G
         {
             using (MemoryStream ms = new MemoryStream())
             {
-                BinaryFormatter bf = new BinaryFormatter();
-                bf.Serialize(ms, this);
-                ms.Position = 0;
-                return (PhaseData)bf.Deserialize(ms);
+                //BinaryFormatter bf = new BinaryFormatter();
+                //bf.Serialize(ms, this);
+                //ms.Position = 0;
+                //return (PhaseData)bf.Deserialize(ms);
+
+                return new PhaseData()
+                {
+                    chr2nd = this.chr2nd,
+                    chrorig = this.chrorig,
+                    chrorient = this.chrorient,
+                    markerpos = this.markerpos,
+                    dataphase = new List<int>(this.dataphase),
+                    chrorigStartIndex = this.chrorigStartIndex,
+                    chrorigEndIndex = this.chrorigEndIndex,
+                    contigsize = this.contigsize,
+                    regionsize = this.regionsize
+                };
+
+
+                //var jsonSerializerOptions = new JsonSerializerOptions()
+                //{
+                //    ReferenceHandler = ReferenceHandler.Preserve,
+                //    WriteIndented = true
+                //};
+
+                //var jsonData = JsonSerializer.Serialize(this, jsonSerializerOptions);
+
+                //return JsonSerializer.Deserialize<PhaseData>(jsonData, jsonSerializerOptions);
+
             }
         }
     }
