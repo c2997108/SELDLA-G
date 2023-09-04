@@ -392,9 +392,16 @@ namespace SELDLA_G
             whiteRectangle = new Texture2D(GraphicsDevice, 1, 1);
             whiteRectangle.SetData(new[] { Color.White });
 
-            //openFileBED(fileAGP, fileBED);
-            openFileCalculated(fileAGP, fileCalculated);
-
+            //計算結果ファイル.matrixがあればそれを読み込む
+            if (File.Exists(fileCalculated))
+            {
+                openFileCalculated(fileAGP, fileCalculated);
+            }
+            else
+            {
+                openFileBED(fileAGP, fileBED);
+            }
+            
             texture = new Texture2D(GraphicsDevice, num_markers, num_markers);
 
             splitTexture = new Texture2D[(num_markers - 1) / splitTextureSize + 1, (num_markers - 1) / splitTextureSize + 1];
