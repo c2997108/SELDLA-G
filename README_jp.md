@@ -298,6 +298,12 @@ SALSA_outputフォルダーの中の`scaffolds_FINAL.agp`、`alignment_iteration
 .\SELDLA-G.exe hic -a scaffolds_FINAL.agp -b alignment_iteration_1.bed -f scaffolds_FINAL.fasta -w 200000
 ```
 
+## 開発環境セットアップ
+
+Visual Studio 2022をインストールし、.NET Core 3.1をインストールしておく。
+
+https://aka.ms/dotnet-core-applaunch?framework=Microsoft.NETCore.App&framework_version=3.1.0&arch=x64&rid=win10-x64
+
 ## 作者の備忘録
 
 古いバージョンの時のやり方。ver. 2.3.0以降のSELDLAなら複数回実行する必要なし。
